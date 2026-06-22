@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>医療機器管理システム</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif; }
+    .hidden { display: none !important; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- ==================== ログイン画面 ==================== -->
+<div id="page-login" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md mx-4">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">医療機器管理システム</h1>
+      <p class="text-gray-500 mt-1 text-sm">ログインしてください</p>
+    </div>
+    <div id="login-error" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">
+      メールアドレスまたはパスワードが正しくありません
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+        <input id="login-email" type="email" value="admin@hospital.jp" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+        <input id="login-password" type="password" value="admin1234" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <button onclick="doLogin()" class="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 transition-colors">
+        ログイン
+      </button>
+      <p class="text-xs text-gray-400 text-center">デモ用: admin@hospital.jp / admin1234</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== メイン画面 ==================== -->
+<div id="page-main" class="hidden flex h-screen">
+
+  <!-- サイドバー -->
+  <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <div class="p-4 border-b border-gray-200">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900">医療機器管理</p>
+          <p class="text-xs text-gray-500">システム</p>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 p-3 space-y-1">
+      <button onclick="showPage('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+        ダッシュボード
+      </button>
+      <button onclick="showPage('devices')" id="nav-devices" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" /></svg>
+        機器台帳
+      </button>
+      <button onclick="showPage('inspections')" id="nav-inspections" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+        点検スケジュール
+      </button>
+      <button onclick="showPage('maintenance')" id="nav-maintenance" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+        保守履歴
+      </button>
+      <button onclick="showPage('repairs')" id="nav-repairs" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        修理・故障履歴
+      </button>
+    </nav>
+    <div class="p-3 border-t border-gray-200">
+      <div class="flex items-center gap-3 px-3 py-2">
+        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+          <span class="text-xs font-medium text-gray-600">管</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900">管理者</p>
+          <p class="text-xs text-gray-500">admin@hospital.jp</p>
+        </div>
+      </div>
+      <button onclick="doLogout()" class="mt-1 w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+        ログアウト
+      </button>
+    </div>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <main class="flex-1 overflow-auto">
+
+    <!-- ダッシュボード -->
+    <div id="page-dashboard" class="hidden p-6">
+      <h1 class="text-2xl font-bold text-gray-900 mb-6">ダッシュボード</h1>
+      <div id="stats-cards" class="grid grid-cols-5 gap-4 mb-8"></div>
+      <div class="grid grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-semibold text-gray-900">30日以内の点検予定</h2>
+            <button onclick="showPage('inspections')" class="text-sm text-blue-600 hover:underline">すべて表示</button>
+          </div>
+          <ul id="upcoming-list" class="space-y-3"></ul>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-semibold text-gray-900">未対応の修理・故障</h2>
+            <button onclick="showPage('repairs')" class="text-sm text-blue-600 hover:underline">すべて表示</button>
+          </div>
+          <ul id="open-repairs-list" class="space-y-3"></ul>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-900">最近の保守作業</h2>
+          <button onclick="showPage('maintenance')" class="text-sm text-blue-600 hover:underline">すべて表示</button>
+        </div>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-xs text-gray-500 border-b border-gray-100">
+            <th class="pb-2 pr-4">機器名</th><th class="pb-2 pr-4">種別</th><th class="pb-2 pr-4">内容</th><th class="pb-2">実施日</th>
+          </tr></thead>
+          <tbody id="recent-maintenance-list"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 機器台帳 -->
+    <div id="page-devices" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">機器台帳</h1>
+        <button onclick="openDeviceModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ 機器を登録</button>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 mb-4 p-4 flex gap-3">
+        <input id="device-search" type="text" placeholder="機器名・コード・メーカーで検索..." oninput="renderDevices()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select id="device-status-filter" onchange="renderDevices()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">すべてのステータス</option>
+          <option value="ACTIVE">稼働中</option>
+          <option value="MAINTENANCE">保守中</option>
+          <option value="REPAIR">修理中</option>
+          <option value="RETIRED">廃棄</option>
+        </select>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">機器コード</th><th class="px-4 py-3">機器名</th><th class="px-4 py-3">カテゴリ</th>
+              <th class="px-4 py-3">メーカー / モデル</th><th class="px-4 py-3">設置場所</th>
+              <th class="px-4 py-3">ステータス</th><th class="px-4 py-3">次回点検</th><th class="px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody id="device-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 点検スケジュール -->
+    <div id="page-inspections" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">点検スケジュール</h1>
+        <button onclick="openInspectionModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ 点検予定を追加</button>
+      </div>
+      <div class="flex gap-2 mb-4" id="inspection-filter-btns">
+        <button onclick="setInspectionFilter('upcoming')" data-filter="upcoming" class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">30日以内</button>
+        <button onclick="setInspectionFilter('overdue')" data-filter="overdue" class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">期限超過</button>
+        <button onclick="setInspectionFilter('all')" data-filter="all" class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">すべて</button>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">機器名</th><th class="px-4 py-3">設置場所</th><th class="px-4 py-3">点検内容</th>
+              <th class="px-4 py-3">予定日</th><th class="px-4 py-3">残り日数</th><th class="px-4 py-3">周期</th><th class="px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody id="inspection-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 保守履歴 -->
+    <div id="page-maintenance" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">保守履歴</h1>
+        <button onclick="openMaintenanceModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ 保守記録を追加</button>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">機器名</th><th class="px-4 py-3">種別</th><th class="px-4 py-3">実施内容</th>
+              <th class="px-4 py-3">結果</th><th class="px-4 py-3">実施者</th><th class="px-4 py-3">実施日</th>
+            </tr>
+          </thead>
+          <tbody id="maintenance-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 修理・故障履歴 -->
+    <div id="page-repairs" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">修理・故障履歴</h1>
+        <button onclick="openRepairModal()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700">+ 故障を報告</button>
+      </div>
+      <div class="flex gap-2 mb-4">
+        <button onclick="setRepairFilter('')" data-rfilter="" class="repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">すべて</button>
+        <button onclick="setRepairFilter('OPEN')" data-rfilter="OPEN" class="repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">未対応</button>
+        <button onclick="setRepairFilter('IN_PROGRESS')" data-rfilter="IN_PROGRESS" class="repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">対応中</button>
+        <button onclick="setRepairFilter('RESOLVED')" data-rfilter="RESOLVED" class="repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">解決済</button>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">機器名</th><th class="px-4 py-3">症状</th><th class="px-4 py-3">ステータス</th>
+              <th class="px-4 py-3">報告者</th><th class="px-4 py-3">報告日</th><th class="px-4 py-3">費用</th><th class="px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody id="repair-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ==================== モーダル ==================== -->
+
+<!-- 機器登録モーダル -->
+<div id="modal-device" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
+    <div class="p-6 border-b border-gray-200">
+      <h2 id="modal-device-title" class="text-lg font-semibold text-gray-900">新規機器登録</h2>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">機器コード *</label>
+          <input id="f-deviceCode" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">機器名 *</label>
+          <input id="f-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">カテゴリ *</label>
+          <input id="f-category" placeholder="例: 診断機器" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">設置場所 *</label>
+          <input id="f-location" placeholder="例: 3F 内科病棟" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">メーカー *</label>
+          <input id="f-manufacturer" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">モデル *</label>
+          <input id="f-model" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">シリアル番号</label>
+          <input id="f-serialNumber" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+          <select id="f-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="ACTIVE">稼働中</option><option value="MAINTENANCE">保守中</option>
+            <option value="REPAIR">修理中</option><option value="RETIRED">廃棄</option>
+          </select></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">購入日</label>
+          <input id="f-purchaseDate" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">保証期限</label>
+          <input id="f-warrantyExpiry" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">備考</label>
+        <textarea id="f-notes" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveDevice()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">保存</button>
+        <button onclick="closeModal('modal-device')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 点検追加モーダル -->
+<div id="modal-inspection" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+    <div class="p-6 border-b border-gray-200"><h2 class="text-lg font-semibold text-gray-900">点検予定を追加</h2></div>
+    <div class="p-6 space-y-4">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">機器 *</label>
+        <select id="fi-deviceId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">機器を選択...</option>
+        </select></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">点検予定日 *</label>
+        <input id="fi-scheduledAt" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">点検周期 *</label>
+        <select id="fi-intervalDays" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="30">月次（30日）</option><option value="90">四半期（90日）</option>
+          <option value="180">半年（180日）</option><option value="365" selected>年次（365日）</option>
+        </select></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">点検内容 *</label>
+        <input id="fi-description" placeholder="例: 定期点検・動作確認" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveInspection()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">保存</button>
+        <button onclick="closeModal('modal-inspection')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 保守記録モーダル -->
+<div id="modal-maintenance" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-screen overflow-y-auto">
+    <div class="p-6 border-b border-gray-200"><h2 class="text-lg font-semibold text-gray-900">保守記録を追加</h2></div>
+    <div class="p-6 space-y-4">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">機器 *</label>
+        <select id="fm-deviceId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">機器を選択...</option>
+        </select></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">実施者 *</label>
+          <input id="fm-performedBy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">実施日 *</label>
+          <input id="fm-performedAt" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">種別 *</label>
+        <select id="fm-type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="INSPECTION">点検</option><option value="CALIBRATION">校正</option>
+          <option value="CLEANING">清掃</option><option value="PREVENTIVE">予防保守</option><option value="OTHER">その他</option>
+        </select></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">実施内容 *</label>
+        <textarea id="fm-description" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">結果</label>
+        <textarea id="fm-result" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveMaintenance()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">保存</button>
+        <button onclick="closeModal('modal-maintenance')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 故障報告モーダル -->
+<div id="modal-repair" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4">
+    <div class="p-6 border-b border-gray-200"><h2 class="text-lg font-semibold text-gray-900">故障を報告</h2></div>
+    <div class="p-6 space-y-4">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">機器 *</label>
+        <select id="fr-deviceId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">機器を選択...</option>
+        </select></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">報告者 *</label>
+          <input id="fr-reportedBy" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">報告日 *</label>
+          <input id="fr-reportedAt" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">症状 *</label>
+        <textarea id="fr-symptom" rows="3" placeholder="発生した症状を詳しく記入" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">修理業者</label>
+        <input id="fr-vendor" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveRepair()" class="flex-1 bg-red-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-red-700">故障を報告</button>
+        <button onclick="closeModal('modal-repair')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 修理更新モーダル -->
+<div id="modal-repair-update" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4">
+    <div class="p-6 border-b border-gray-200">
+      <h2 class="text-lg font-semibold text-gray-900">修理状況を更新</h2>
+      <p id="fru-device-name" class="text-sm text-gray-500 mt-1"></p>
+    </div>
+    <div class="p-6 space-y-4">
+      <input type="hidden" id="fru-id">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">ステータス *</label>
+        <select id="fru-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="OPEN">未対応</option><option value="IN_PROGRESS">対応中</option>
+          <option value="RESOLVED">解決済</option><option value="CLOSED">完了</option>
+        </select></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">対応内容</label>
+        <textarea id="fru-action" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">修理費用（円）</label>
+          <input id="fru-cost" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">修理業者</label>
+          <input id="fru-vendor" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveRepairUpdate()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">更新</button>
+        <button onclick="closeModal('modal-repair-update')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== データ ====================
+let db = {
+  devices: [
+    { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象' },
+    { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '' },
+    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '' },
+    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '' },
+  ],
+  inspections: [
+    { id: 'i1', deviceId: 'd1', scheduledAt: '2026-06-29', intervalDays: 365, description: '年次定期点検', completed: false },
+    { id: 'i2', deviceId: 'd2', scheduledAt: '2026-05-01', intervalDays: 180, description: '半年点検・キャリブレーション', completed: false },
+    { id: 'i3', deviceId: 'd4', scheduledAt: '2026-07-15', intervalDays: 90, description: '四半期点検', completed: false },
+  ],
+  maintenanceLogs: [
+    { id: 'm1', deviceId: 'd1', performedBy: '担当スタッフ', performedAt: '2026-04-10', type: 'INSPECTION', description: '年次定期点検実施', result: '異常なし。すべての機能が正常に動作することを確認。' },
+    { id: 'm2', deviceId: 'd2', performedBy: '外部業者', performedAt: '2026-03-15', type: 'CALIBRATION', description: '磁場キャリブレーション', result: '基準値内で正常。' },
+    { id: 'm3', deviceId: 'd4', performedBy: '担当スタッフ', performedAt: '2026-04-01', type: 'CLEANING', description: '定期清掃・プローブ点検', result: '清掃完了。プローブ異常なし。' },
+  ],
+  repairLogs: [
+    { id: 'r1', deviceId: 'd3', reportedBy: '看護師 田中', reportedAt: '2026-05-10', symptom: '表示画面が点灯しない、アラーム音が鳴らない', cause: '', action: '', status: 'OPEN', cost: null, vendor: 'フクダ電子サービス' },
+  ],
+};
+
+let currentInspectionFilter = 'upcoming';
+let currentRepairFilter = '';
+let editingDeviceId = null;
+
+// ==================== ユーティリティ ====================
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('ja-JP');
+}
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+function daysUntil(d) {
+  return Math.ceil((new Date(d) - new Date()) / 86400000);
+}
+function uid() {
+  return Math.random().toString(36).slice(2);
+}
+function getDevice(id) {
+  return db.devices.find(d => d.id === id);
+}
+
+const statusConfig = {
+  ACTIVE:      { label: '稼働中', color: 'bg-green-100 text-green-700' },
+  MAINTENANCE: { label: '保守中', color: 'bg-blue-100 text-blue-700' },
+  REPAIR:      { label: '修理中', color: 'bg-orange-100 text-orange-700' },
+  RETIRED:     { label: '廃棄',   color: 'bg-gray-100 text-gray-500' },
+};
+const repairStatusConfig = {
+  OPEN:        { label: '未対応', color: 'bg-red-100 text-red-700' },
+  IN_PROGRESS: { label: '対応中', color: 'bg-yellow-100 text-yellow-700' },
+  RESOLVED:    { label: '解決済', color: 'bg-green-100 text-green-700' },
+  CLOSED:      { label: '完了',   color: 'bg-gray-100 text-gray-600' },
+};
+const typeLabels = {
+  INSPECTION: '点検', CALIBRATION: '校正', CLEANING: '清掃', PREVENTIVE: '予防保守', OTHER: 'その他',
+};
+const typeColors = {
+  INSPECTION: 'bg-blue-100 text-blue-700', CALIBRATION: 'bg-purple-100 text-purple-700',
+  CLEANING: 'bg-teal-100 text-teal-700', PREVENTIVE: 'bg-yellow-100 text-yellow-700', OTHER: 'bg-gray-100 text-gray-600',
+};
+
+// ==================== 認証 ====================
+function doLogin() {
+  const email = document.getElementById('login-email').value;
+  const pass  = document.getElementById('login-password').value;
+  if (email === 'admin@hospital.jp' && pass === 'admin1234') {
+    document.getElementById('page-login').classList.add('hidden');
+    document.getElementById('page-main').classList.remove('hidden');
+    document.getElementById('page-main').style.display = 'flex';
+    showPage('dashboard');
+  } else {
+    document.getElementById('login-error').classList.remove('hidden');
+  }
+}
+function doLogout() {
+  document.getElementById('page-main').classList.add('hidden');
+  document.getElementById('page-login').classList.remove('hidden');
+}
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ==================== ナビゲーション ====================
+function showPage(name) {
+  ['dashboard','devices','inspections','maintenance','repairs'].forEach(p => {
+    document.getElementById('page-' + p).classList.add('hidden');
+    const nav = document.getElementById('nav-' + p);
+    if (nav) nav.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left text-gray-600 hover:bg-gray-50';
+  });
+  document.getElementById('page-' + name).classList.remove('hidden');
+  const active = document.getElementById('nav-' + name);
+  if (active) active.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left bg-blue-50 text-blue-700 font-medium';
+  if (name === 'dashboard')    renderDashboard();
+  if (name === 'devices')      renderDevices();
+  if (name === 'inspections')  renderInspections();
+  if (name === 'maintenance')  renderMaintenance();
+  if (name === 'repairs')      renderRepairs();
+}
+
+// ==================== モーダル ====================
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ==================== ダッシュボード ====================
+function renderDashboard() {
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30 * 86400000);
+
+  const stats = {
+    total: db.devices.length,
+    active: db.devices.filter(d => d.status === 'ACTIVE').length,
+    repair: db.devices.filter(d => d.status === 'REPAIR').length,
+    overdue: db.inspections.filter(i => !i.completed && new Date(i.scheduledAt) < now).length,
+    openRepairs: db.repairLogs.filter(r => r.status === 'OPEN' || r.status === 'IN_PROGRESS').length,
+  };
+
+  document.getElementById('stats-cards').innerHTML = [
+    { label: '総機器数', value: stats.total, cls: 'text-gray-900' },
+    { label: '稼働中', value: stats.active, cls: 'text-green-600' },
+    { label: '修理中', value: stats.repair, cls: stats.repair > 0 ? 'text-orange-500' : 'text-gray-900' },
+    { label: '点検期限超過', value: stats.overdue, cls: stats.overdue > 0 ? 'text-red-600' : 'text-gray-900' },
+    { label: '未対応修理', value: stats.openRepairs, cls: stats.openRepairs > 0 ? 'text-yellow-500' : 'text-gray-900' },
+  ].map(s => `
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <p class="text-sm text-gray-500 mb-1">${s.label}</p>
+      <p class="text-3xl font-bold ${s.cls}">${s.value}</p>
+    </div>`).join('');
+
+  const upcoming = db.inspections.filter(i => !i.completed && new Date(i.scheduledAt) >= now && new Date(i.scheduledAt) <= in30);
+  document.getElementById('upcoming-list').innerHTML = upcoming.length === 0
+    ? '<li class="text-sm text-gray-400">予定なし</li>'
+    : upcoming.map(s => { const d = getDevice(s.deviceId); return `
+      <li class="flex items-start gap-3">
+        <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+        <div>
+          <p class="text-sm font-medium text-gray-900">${d?.name} <span class="text-gray-400 text-xs">(${d?.deviceCode})</span></p>
+          <p class="text-xs text-gray-500">${fmtDate(s.scheduledAt)} · ${d?.location}</p>
+          <p class="text-xs text-gray-600 mt-0.5">${s.description}</p>
+        </div>
+      </li>`; }).join('');
+
+  const openRepairs = db.repairLogs.filter(r => r.status === 'OPEN' || r.status === 'IN_PROGRESS');
+  document.getElementById('open-repairs-list').innerHTML = openRepairs.length === 0
+    ? '<li class="text-sm text-gray-400">未対応の修理はありません</li>'
+    : openRepairs.map(r => { const d = getDevice(r.deviceId); const st = repairStatusConfig[r.status]; return `
+      <li class="flex items-start gap-3">
+        <div class="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"></div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <p class="text-sm font-medium text-gray-900">${d?.name}</p>
+            <span class="text-xs px-2 py-0.5 rounded-full ${st.color}">${st.label}</span>
+          </div>
+          <p class="text-xs text-gray-500">${fmtDate(r.reportedAt)}</p>
+          <p class="text-xs text-gray-600 mt-0.5">${r.symptom}</p>
+        </div>
+      </li>`; }).join('');
+
+  document.getElementById('recent-maintenance-list').innerHTML = [...db.maintenanceLogs].reverse().slice(0, 5).map(m => {
+    const d = getDevice(m.deviceId);
+    return `<tr class="hover:bg-gray-50">
+      <td class="py-2 pr-4 font-medium text-gray-900">${d?.name}</td>
+      <td class="py-2 pr-4 text-gray-600">${typeLabels[m.type] || m.type}</td>
+      <td class="py-2 pr-4 text-gray-600 max-w-xs truncate">${m.description}</td>
+      <td class="py-2 text-gray-500">${fmtDate(m.performedAt)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ==================== 機器台帳 ====================
+function renderDevices() {
+  const search = (document.getElementById('device-search')?.value || '').toLowerCase();
+  const statusF = document.getElementById('device-status-filter')?.value || '';
+  const filtered = db.devices.filter(d => {
+    const matchSearch = !search || d.name.toLowerCase().includes(search) || d.deviceCode.toLowerCase().includes(search) || d.manufacturer.toLowerCase().includes(search);
+    const matchStatus = !statusF || d.status === statusF;
+    return matchSearch && matchStatus;
+  });
+  const nextInspection = (deviceId) => db.inspections.filter(i => !i.completed && i.deviceId === deviceId).sort((a,b) => new Date(a.scheduledAt)-new Date(b.scheduledAt))[0];
+
+  document.getElementById('device-table-body').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">機器が見つかりません</td></tr>'
+    : filtered.map(d => {
+        const st = statusConfig[d.status] || { label: d.status, color: 'bg-gray-100 text-gray-600' };
+        const ni = nextInspection(d.id);
+        const isOverdue = ni && new Date(ni.scheduledAt) < new Date();
+        return `<tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-mono text-xs text-gray-600">${d.deviceCode}</td>
+          <td class="px-4 py-3 font-medium text-gray-900">${d.name}</td>
+          <td class="px-4 py-3 text-gray-600">${d.category}</td>
+          <td class="px-4 py-3 text-gray-600"><div>${d.manufacturer}</div><div class="text-xs text-gray-400">${d.model}</div></td>
+          <td class="px-4 py-3 text-gray-600">${d.location}</td>
+          <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${st.color}">${st.label}</span></td>
+          <td class="px-4 py-3">${ni ? `<span class="text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}">${isOverdue ? '⚠ ' : ''}${fmtDate(ni.scheduledAt)}</span>` : '<span class="text-xs text-gray-400">未設定</span>'}</td>
+          <td class="px-4 py-3 flex gap-2">
+            <button onclick="openDeviceModal('${d.id}')" class="text-xs text-blue-600 hover:underline">編集</button>
+            <button onclick="deleteDevice('${d.id}')" class="text-xs text-red-500 hover:underline">削除</button>
+          </td>
+        </tr>`;
+      }).join('');
+}
+
+function openDeviceModal(id) {
+  editingDeviceId = id || null;
+  const d = id ? getDevice(id) : null;
+  document.getElementById('modal-device-title').textContent = d ? '機器情報を編集' : '新規機器登録';
+  ['deviceCode','name','category','location','manufacturer','model','serialNumber','purchaseDate','warrantyExpiry','notes'].forEach(k => {
+    document.getElementById('f-' + k).value = d ? (d[k] || '') : '';
+  });
+  document.getElementById('f-status').value = d ? d.status : 'ACTIVE';
+  document.getElementById('modal-device').classList.remove('hidden');
+}
+
+function saveDevice() {
+  const vals = {};
+  ['deviceCode','name','category','location','manufacturer','model','serialNumber','purchaseDate','warrantyExpiry','notes'].forEach(k => {
+    vals[k] = document.getElementById('f-' + k).value;
+  });
+  vals.status = document.getElementById('f-status').value;
+  if (!vals.deviceCode || !vals.name || !vals.category || !vals.location || !vals.manufacturer || !vals.model) {
+    alert('必須項目を入力してください');
+    return;
+  }
+  if (editingDeviceId) {
+    const idx = db.devices.findIndex(d => d.id === editingDeviceId);
+    db.devices[idx] = { ...db.devices[idx], ...vals };
+  } else {
+    db.devices.push({ id: uid(), ...vals });
+  }
+  closeModal('modal-device');
+  renderDevices();
+}
+
+function deleteDevice(id) {
+  if (!confirm('この機器を削除しますか？')) return;
+  db.devices = db.devices.filter(d => d.id !== id);
+  db.inspections = db.inspections.filter(i => i.deviceId !== id);
+  db.maintenanceLogs = db.maintenanceLogs.filter(m => m.deviceId !== id);
+  db.repairLogs = db.repairLogs.filter(r => r.deviceId !== id);
+  renderDevices();
+}
+
+// ==================== 点検スケジュール ====================
+function setInspectionFilter(f) {
+  currentInspectionFilter = f;
+  renderInspections();
+}
+
+function renderInspections() {
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30 * 86400000);
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    const isActive = btn.dataset.filter === currentInspectionFilter;
+    btn.className = 'filter-btn px-4 py-1.5 rounded-full text-sm font-medium transition-colors ' +
+      (isActive ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50');
+  });
+
+  let filtered = db.inspections.filter(i => !i.completed);
+  if (currentInspectionFilter === 'upcoming') filtered = filtered.filter(i => new Date(i.scheduledAt) <= in30);
+  if (currentInspectionFilter === 'overdue')  filtered = filtered.filter(i => new Date(i.scheduledAt) < now);
+
+  document.getElementById('inspection-table-body').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">該当する点検予定がありません</td></tr>'
+    : filtered.map(s => {
+        const d = getDevice(s.deviceId);
+        const days = daysUntil(s.scheduledAt);
+        const isOverdue = days < 0;
+        const isUrgent = days >= 0 && days <= 7;
+        return `<tr class="hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}">
+          <td class="px-4 py-3 font-medium text-gray-900"><div>${d?.name}</div><div class="text-xs text-gray-400 font-mono">${d?.deviceCode}</div></td>
+          <td class="px-4 py-3 text-gray-600">${d?.location}</td>
+          <td class="px-4 py-3 text-gray-600">${s.description}</td>
+          <td class="px-4 py-3 text-gray-600">${fmtDate(s.scheduledAt)}</td>
+          <td class="px-4 py-3"><span class="text-sm font-medium ${isOverdue ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-gray-600'}">${isOverdue ? Math.abs(days) + '日超過' : days + '日後'}</span></td>
+          <td class="px-4 py-3 text-gray-600">${s.intervalDays}日</td>
+          <td class="px-4 py-3">
+            <button onclick="completeInspection('${s.id}')" class="text-xs bg-green-600 text-white px-3 py-1 rounded-full hover:bg-green-700">完了</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+  populateDeviceSelects();
+}
+
+function completeInspection(id) {
+  if (!confirm('この点検を完了済みにしますか？次回スケジュールが自動生成されます。')) return;
+  const s = db.inspections.find(i => i.id === id);
+  s.completed = true;
+  const next = new Date(s.scheduledAt);
+  next.setDate(next.getDate() + s.intervalDays);
+  db.inspections.push({ id: uid(), deviceId: s.deviceId, scheduledAt: next.toISOString().split('T')[0], intervalDays: s.intervalDays, description: s.description, completed: false });
+  renderInspections();
+}
+
+function openInspectionModal() {
+  populateDeviceSelects();
+  document.getElementById('fi-deviceId').value = '';
+  document.getElementById('fi-scheduledAt').value = '';
+  document.getElementById('fi-description').value = '';
+  document.getElementById('modal-inspection').classList.remove('hidden');
+}
+
+function saveInspection() {
+  const deviceId = document.getElementById('fi-deviceId').value;
+  const scheduledAt = document.getElementById('fi-scheduledAt').value;
+  const intervalDays = parseInt(document.getElementById('fi-intervalDays').value);
+  const description = document.getElementById('fi-description').value;
+  if (!deviceId || !scheduledAt || !description) { alert('必須項目を入力してください'); return; }
+  db.inspections.push({ id: uid(), deviceId, scheduledAt, intervalDays, description, completed: false });
+  closeModal('modal-inspection');
+  renderInspections();
+}
+
+// ==================== 保守履歴 ====================
+function renderMaintenance() {
+  document.getElementById('maintenance-table-body').innerHTML = [...db.maintenanceLogs].reverse().map(m => {
+    const d = getDevice(m.deviceId);
+    const tc = typeColors[m.type] || 'bg-gray-100 text-gray-600';
+    return `<tr class="hover:bg-gray-50">
+      <td class="px-4 py-3 font-medium text-gray-900"><div>${d?.name}</div><div class="text-xs text-gray-400 font-mono">${d?.deviceCode}</div></td>
+      <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tc}">${typeLabels[m.type] || m.type}</span></td>
+      <td class="px-4 py-3 text-gray-600 max-w-xs truncate">${m.description}</td>
+      <td class="px-4 py-3 text-gray-600 max-w-xs truncate">${m.result || '—'}</td>
+      <td class="px-4 py-3 text-gray-600">${m.performedBy}</td>
+      <td class="px-4 py-3 text-gray-600">${fmtDate(m.performedAt)}</td>
+    </tr>`;
+  }).join('');
+  populateDeviceSelects();
+}
+
+function openMaintenanceModal() {
+  populateDeviceSelects();
+  document.getElementById('fm-deviceId').value = '';
+  document.getElementById('fm-performedBy').value = '';
+  document.getElementById('fm-performedAt').value = today();
+  document.getElementById('fm-description').value = '';
+  document.getElementById('fm-result').value = '';
+  document.getElementById('modal-maintenance').classList.remove('hidden');
+}
+
+function saveMaintenance() {
+  const deviceId = document.getElementById('fm-deviceId').value;
+  const performedBy = document.getElementById('fm-performedBy').value;
+  const performedAt = document.getElementById('fm-performedAt').value;
+  const type = document.getElementById('fm-type').value;
+  const description = document.getElementById('fm-description').value;
+  const result = document.getElementById('fm-result').value;
+  if (!deviceId || !performedBy || !performedAt || !description) { alert('必須項目を入力してください'); return; }
+  db.maintenanceLogs.push({ id: uid(), deviceId, performedBy, performedAt, type, description, result });
+  closeModal('modal-maintenance');
+  renderMaintenance();
+}
+
+// ==================== 修理・故障履歴 ====================
+function setRepairFilter(f) {
+  currentRepairFilter = f;
+  renderRepairs();
+}
+
+function renderRepairs() {
+  document.querySelectorAll('.repair-filter-btn').forEach(btn => {
+    const isActive = btn.dataset.rfilter === currentRepairFilter;
+    btn.className = 'repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium transition-colors ' +
+      (isActive ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50');
+  });
+
+  let filtered = currentRepairFilter ? db.repairLogs.filter(r => r.status === currentRepairFilter) : db.repairLogs;
+  document.getElementById('repair-table-body').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">修理・故障履歴がありません</td></tr>'
+    : [...filtered].reverse().map(r => {
+        const d = getDevice(r.deviceId);
+        const st = repairStatusConfig[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600' };
+        const canUpdate = r.status === 'OPEN' || r.status === 'IN_PROGRESS';
+        return `<tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium text-gray-900"><div>${d?.name}</div><div class="text-xs text-gray-400 font-mono">${d?.deviceCode}</div></td>
+          <td class="px-4 py-3 text-gray-600 max-w-xs truncate">${r.symptom}</td>
+          <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${st.color}">${st.label}</span></td>
+          <td class="px-4 py-3 text-gray-600">${r.reportedBy}</td>
+          <td class="px-4 py-3 text-gray-600">${fmtDate(r.reportedAt)}</td>
+          <td class="px-4 py-3 text-gray-600">${r.cost != null ? '¥' + r.cost.toLocaleString() : '—'}</td>
+          <td class="px-4 py-3">${canUpdate ? `<button onclick="openRepairUpdateModal('${r.id}')" class="text-xs text-blue-600 hover:underline">更新</button>` : ''}</td>
+        </tr>`;
+      }).join('');
+  populateDeviceSelects();
+}
+
+function openRepairModal() {
+  populateDeviceSelects();
+  document.getElementById('fr-deviceId').value = '';
+  document.getElementById('fr-reportedBy').value = '';
+  document.getElementById('fr-reportedAt').value = today();
+  document.getElementById('fr-symptom').value = '';
+  document.getElementById('fr-vendor').value = '';
+  document.getElementById('modal-repair').classList.remove('hidden');
+}
+
+function saveRepair() {
+  const deviceId = document.getElementById('fr-deviceId').value;
+  const reportedBy = document.getElementById('fr-reportedBy').value;
+  const reportedAt = document.getElementById('fr-reportedAt').value;
+  const symptom = document.getElementById('fr-symptom').value;
+  const vendor = document.getElementById('fr-vendor').value;
+  if (!deviceId || !reportedBy || !reportedAt || !symptom) { alert('必須項目を入力してください'); return; }
+  db.repairLogs.push({ id: uid(), deviceId, reportedBy, reportedAt, symptom, cause: '', action: '', status: 'OPEN', cost: null, vendor });
+  const dev = getDevice(deviceId);
+  if (dev) dev.status = 'REPAIR';
+  closeModal('modal-repair');
+  renderRepairs();
+}
+
+function openRepairUpdateModal(id) {
+  const r = db.repairLogs.find(x => x.id === id);
+  const d = getDevice(r.deviceId);
+  document.getElementById('fru-id').value = id;
+  document.getElementById('fru-device-name').textContent = d?.name;
+  document.getElementById('fru-status').value = r.status;
+  document.getElementById('fru-action').value = r.action || '';
+  document.getElementById('fru-cost').value = r.cost || '';
+  document.getElementById('fru-vendor').value = r.vendor || '';
+  document.getElementById('modal-repair-update').classList.remove('hidden');
+}
+
+function saveRepairUpdate() {
+  const id = document.getElementById('fru-id').value;
+  const r = db.repairLogs.find(x => x.id === id);
+  r.status = document.getElementById('fru-status').value;
+  r.action = document.getElementById('fru-action').value;
+  r.cost = document.getElementById('fru-cost').value ? parseFloat(document.getElementById('fru-cost').value) : null;
+  r.vendor = document.getElementById('fru-vendor').value;
+  if (r.status === 'RESOLVED' || r.status === 'CLOSED') {
+    const dev = getDevice(r.deviceId);
+    if (dev) dev.status = 'ACTIVE';
+  }
+  closeModal('modal-repair-update');
+  renderRepairs();
+}
+
+// ==================== ヘルパー ====================
+function populateDeviceSelects() {
+  const opts = '<option value="">機器を選択...</option>' + db.devices.map(d => `<option value="${d.id}">${d.deviceCode} - ${d.name}</option>`).join('');
+  ['fi-deviceId','fm-deviceId','fr-deviceId'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+}
+</script>
+</body>
+</html>
