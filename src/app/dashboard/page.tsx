@@ -64,11 +64,15 @@ function formatDate(dateStr: string) {
   });
 }
 
+const PMDA_CHECK_KEY = "pmdaLastCheckedAt";
+const PMDA_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<{ checkedCount: number; updatedCount: number } | null>(null);
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
 
   async function fetchDashboard() {
     const r = await fetch("/api/dashboard");
@@ -76,19 +80,35 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchDashboard(); }, []);
-
-  async function handleCheckPmda() {
+  async function runPmdaCheck() {
     setChecking(true);
     setCheckResult(null);
     try {
       const r = await fetch("/api/pmda/check-updates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
       const result = await r.json();
+      const now = new Date();
+      localStorage.setItem(PMDA_CHECK_KEY, now.toISOString());
+      setLastCheckedAt(now);
       setCheckResult(result);
       await fetchDashboard();
     } finally {
       setChecking(false);
     }
+  }
+
+  useEffect(() => {
+    fetchDashboard().then(() => {
+      const stored = localStorage.getItem(PMDA_CHECK_KEY);
+      const last = stored ? new Date(stored) : null;
+      setLastCheckedAt(last);
+      const shouldCheck = !last || (Date.now() - last.getTime() > PMDA_CHECK_INTERVAL_MS);
+      if (shouldCheck) runPmdaCheck();
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleCheckPmda() {
+    runPmdaCheck();
   }
 
   if (loading) {
@@ -198,7 +218,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="font-semibold text-gray-900">添付文書 更新チェック</h2>
-              <p className="text-xs text-gray-500 mt-0.5">PMDAに登録された添付文書に更新がないか確認します</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {checking ? "確認中..." : lastCheckedAt ? `最終確認: ${lastCheckedAt.toLocaleString("ja-JP")}（24時間ごとに自動確認）` : "PMDAに登録された添付文書に更新がないか確認します"}
+              </p>
             </div>
             <button
               onClick={handleCheckPmda}

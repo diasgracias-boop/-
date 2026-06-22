@@ -378,9 +378,9 @@
         <div class="flex items-center justify-between mb-4">
           <div>
             <h2 class="font-semibold text-gray-900">添付文書 更新チェック</h2>
-            <p class="text-xs text-gray-500 mt-0.5">PMDAに登録された添付文書に更新がないか確認します</p>
+            <p id="pmda-last-checked" class="text-xs text-gray-500 mt-0.5">PMDAに登録された添付文書に更新がないか確認します</p>
           </div>
-          <button onclick="demoPmdaCheck()" class="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-colors">今すぐ確認</button>
+          <button id="pmda-check-btn" onclick="demoPmdaCheck()" class="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">今すぐ確認</button>
         </div>
         <div id="pmda-check-result" class="hidden mb-4 bg-purple-50 border border-purple-200 text-purple-800 text-sm rounded-lg px-4 py-2"></div>
         <ul id="pmda-updates-list" class="space-y-2"></ul>
@@ -925,7 +925,7 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.remove('hidden');
   const active = document.getElementById('nav-' + name);
   if (active) active.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left bg-blue-50 text-blue-700 font-medium';
-  if (name === 'dashboard')    renderDashboard();
+  if (name === 'dashboard')    { renderDashboard(); autoCheckPmda(); }
   if (name === 'devices')      renderDevices();
   if (name === 'inspections')  renderInspections();
   if (name === 'maintenance')  renderMaintenance();
@@ -1013,24 +1013,55 @@ function renderDashboard() {
       </li>`).join('');
 }
 
-function demoPmdaCheck() {
-  const btn = event.target;
-  btn.textContent = '確認中...';
-  btn.disabled = true;
+const PMDA_CHECK_KEY = 'pmdaLastCheckedAt';
+const PMDA_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+function autoCheckPmda() {
+  const stored = localStorage.getItem(PMDA_CHECK_KEY);
+  const last = stored ? new Date(stored) : null;
+  const elapsed = last ? Date.now() - last.getTime() : Infinity;
+  if (elapsed >= PMDA_CHECK_INTERVAL_MS) {
+    runPmdaCheck(true);
+  } else {
+    updateLastCheckedLabel(last);
+  }
+}
+
+function updateLastCheckedLabel(date) {
+  const label = document.getElementById('pmda-last-checked');
+  if (!label) return;
+  label.textContent = date
+    ? `最終確認: ${date.toLocaleString('ja-JP')}（24時間ごとに自動確認）`
+    : 'PMDAに登録された添付文書に更新がないか確認します';
+}
+
+function runPmdaCheck(isAuto) {
+  const btn = document.getElementById('pmda-check-btn');
+  if (btn) { btn.textContent = '確認中...'; btn.disabled = true; }
+  const label = document.getElementById('pmda-last-checked');
+  if (label && isAuto) label.textContent = '自動確認中...';
+
   setTimeout(() => {
-    // Demo: randomly mark one device with pmdaApprovalNumber as updated
     const candidates = db.devices.filter(d => d.pmdaApprovalNumber);
-    const updated = candidates.length > 0 ? Math.floor(Math.random() * 2) : 0;
-    if (updated > 0 && candidates.length > 0) {
-      candidates[0].pmdaUpdateAvailable = true;
-    }
+    const updated = candidates.length > 0 && !isAuto ? Math.floor(Math.random() * 2) : 0;
+    if (updated > 0 && candidates.length > 0) candidates[0].pmdaUpdateAvailable = true;
+
+    const now = new Date();
+    localStorage.setItem(PMDA_CHECK_KEY, now.toISOString());
+    updateLastCheckedLabel(now);
+
     const resultEl = document.getElementById('pmda-check-result');
-    resultEl.textContent = `${candidates.length}件を確認しました。${updated > 0 ? `${updated}件に更新があります。` : '更新はありません。'}`;
-    resultEl.classList.remove('hidden');
-    btn.textContent = '今すぐ確認';
-    btn.disabled = false;
+    if (!isAuto && resultEl) {
+      resultEl.textContent = `${candidates.length}件を確認しました。${updated > 0 ? `${updated}件に更新があります。` : '更新はありません。'}`;
+      resultEl.classList.remove('hidden');
+    }
+    if (btn) { btn.textContent = '今すぐ確認'; btn.disabled = false; }
     renderDashboard();
-  }, 1500);
+  }, isAuto ? 0 : 1500);
+}
+
+function demoPmdaCheck() {
+  runPmdaCheck(false);
 }
 
 // ==================== 機器台帳 ====================
