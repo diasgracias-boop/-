@@ -86,6 +86,10 @@ export async function POST(req: NextRequest) {
       attachmentUrl: body.attachmentUrl || null,
       catalogUrl: body.catalogUrl || null,
       manualUrl: body.manualUrl || null,
+      pmdaApprovalNumber: body.pmdaApprovalNumber || null,
+      pmdaDocUpdatedAt: body.pmdaDocUpdatedAt || null,
+      pmdaLastCheckedAt: body.pmdaApprovalNumber ? new Date() : null,
+      pmdaUpdateAvailable: false,
     },
   });
 

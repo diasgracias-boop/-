@@ -10,6 +10,7 @@ interface DashboardData {
     repairDevices: number;
     overdueInspections: number;
     openRepairs: number;
+    pmdaUpdatesCount: number;
   };
   upcomingInspections: Array<{
     id: string;
@@ -30,6 +31,13 @@ interface DashboardData {
     symptom: string;
     status: string;
     device: { name: string; deviceCode: string };
+  }>;
+  pmdaUpdates: Array<{
+    id: string;
+    name: string;
+    deviceCode: string;
+    manufacturer: string;
+    pmdaLastCheckedAt: string | null;
   }>;
 }
 
@@ -59,13 +67,29 @@ function formatDate(dateStr: string) {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checking, setChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<{ checkedCount: number; updatedCount: number } | null>(null);
 
-  useEffect(() => {
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, []);
+  async function fetchDashboard() {
+    const r = await fetch("/api/dashboard");
+    setData(await r.json());
+    setLoading(false);
+  }
+
+  useEffect(() => { fetchDashboard(); }, []);
+
+  async function handleCheckPmda() {
+    setChecking(true);
+    setCheckResult(null);
+    try {
+      const r = await fetch("/api/pmda/check-updates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const result = await r.json();
+      setCheckResult(result);
+      await fetchDashboard();
+    } finally {
+      setChecking(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -85,6 +109,7 @@ export default function DashboardPage() {
     { label: "修理中", value: stats.repairDevices, color: "bg-orange-500", href: "/dashboard/devices?status=REPAIR" },
     { label: "点検期限超過", value: stats.overdueInspections, color: "bg-red-600", href: "/dashboard/inspections?overdue=true" },
     { label: "未対応修理", value: stats.openRepairs, color: "bg-yellow-500", href: "/dashboard/repairs?status=OPEN" },
+    { label: "添付文書更新", value: stats.pmdaUpdatesCount, color: "bg-purple-600", href: "#pmda-updates" },
   ];
 
   return (
@@ -165,6 +190,41 @@ export default function DashboardPage() {
                   </li>
                 );
               })}
+            </ul>
+          )}
+        </div>
+
+        <div id="pmda-updates" className="bg-white rounded-xl border border-gray-200 p-5 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-semibold text-gray-900">添付文書 更新チェック</h2>
+              <p className="text-xs text-gray-500 mt-0.5">PMDAに登録された添付文書に更新がないか確認します</p>
+            </div>
+            <button
+              onClick={handleCheckPmda}
+              disabled={checking}
+              className="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+            >
+              {checking ? "確認中..." : "今すぐ確認"}
+            </button>
+          </div>
+          {checkResult && (
+            <div className="mb-4 bg-purple-50 border border-purple-200 text-purple-800 text-sm rounded-lg px-4 py-2">
+              {checkResult.checkedCount}件を確認しました。{checkResult.updatedCount > 0 ? `${checkResult.updatedCount}件に更新があります。` : "更新はありません。"}
+            </div>
+          )}
+          {data.pmdaUpdates.length === 0 ? (
+            <p className="text-sm text-gray-400">更新が必要な添付文書はありません</p>
+          ) : (
+            <ul className="space-y-2">
+              {data.pmdaUpdates.map((d) => (
+                <li key={d.id} className="flex items-center gap-3 text-sm">
+                  <span className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0" />
+                  <span className="font-medium text-gray-900">{d.name}</span>
+                  <span className="text-gray-400 text-xs">({d.deviceCode})</span>
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full ml-auto">更新あり</span>
+                </li>
+              ))}
             </ul>
           )}
         </div>

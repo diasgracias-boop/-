@@ -19,6 +19,7 @@ export async function GET() {
     openRepairs,
     recentMaintenance,
     recentRepairs,
+    pmdaUpdates,
   ] = await Promise.all([
     prisma.device.count(),
     prisma.device.count({ where: { status: "ACTIVE" } }),
@@ -44,12 +45,18 @@ export async function GET() {
       take: 5,
       include: { device: { select: { name: true, deviceCode: true } } },
     }),
+    prisma.device.findMany({
+      where: { pmdaUpdateAvailable: true },
+      select: { id: true, name: true, deviceCode: true, manufacturer: true, pmdaLastCheckedAt: true },
+      take: 5,
+    }),
   ]);
 
   return NextResponse.json({
-    stats: { totalDevices, activeDevices, repairDevices, overdueInspections, openRepairs },
+    stats: { totalDevices, activeDevices, repairDevices, overdueInspections, openRepairs, pmdaUpdatesCount: pmdaUpdates.length },
     upcomingInspections,
     recentMaintenance,
     recentRepairs,
+    pmdaUpdates,
   });
 }

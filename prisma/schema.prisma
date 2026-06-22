@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -58,10 +57,14 @@ model Device {
   isCleanField     Boolean      @default(false)
   cleanFieldCategory String?
   photoUrl         String?
-  attachmentUrl    String?
-  catalogUrl       String?
-  manualUrl        String?
-  createdAt        DateTime     @default(now())
+  attachmentUrl         String?
+  catalogUrl            String?
+  manualUrl             String?
+  pmdaApprovalNumber    String?
+  pmdaDocUpdatedAt      String?
+  pmdaLastCheckedAt     DateTime?
+  pmdaUpdateAvailable   Boolean   @default(false)
+  createdAt             DateTime  @default(now())
   updatedAt        DateTime     @updatedAt
 
   maintenanceLogs     MaintenanceLog[]

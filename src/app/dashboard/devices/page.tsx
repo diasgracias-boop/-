@@ -16,6 +16,7 @@ interface Device {
   status: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
+  pmdaUpdateAvailable?: boolean;
   _count: { maintenanceLogs: number; repairLogs: number };
   inspectionSchedules: Array<{ scheduledAt: string }>;
 }
@@ -127,9 +128,14 @@ export default function DevicesPage() {
                   <tr key={d.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{d.deviceCode}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">
-                      <Link href={`/dashboard/devices/${d.id}`} className="hover:text-blue-600 hover:underline">
-                        {d.name}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/dashboard/devices/${d.id}`} className="hover:text-blue-600 hover:underline">
+                          {d.name}
+                        </Link>
+                        {d.pmdaUpdateAvailable && (
+                          <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">添付文書更新</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{d.category}</td>
                     <td className="px-4 py-3 text-gray-600">

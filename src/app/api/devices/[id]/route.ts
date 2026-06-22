@@ -74,6 +74,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       attachmentUrl: body.attachmentUrl || null,
       catalogUrl: body.catalogUrl || null,
       manualUrl: body.manualUrl || null,
+      pmdaApprovalNumber: body.pmdaApprovalNumber || null,
+      pmdaDocUpdatedAt: body.pmdaDocUpdatedAt || null,
+      ...(body.pmdaApprovalNumber ? { pmdaLastCheckedAt: new Date(), pmdaUpdateAvailable: false } : {}),
     },
   });
 

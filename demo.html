@@ -45,6 +45,7 @@
     .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .h-screen { height: 100vh; }
     .min-h-screen { min-height: 100vh; }
     .h-full { height: 100%; }
@@ -356,7 +357,7 @@
     <!-- ダッシュボード -->
     <div id="page-dashboard" class="hidden p-6">
       <h1 class="text-2xl font-bold text-gray-900 mb-6">ダッシュボード</h1>
-      <div id="stats-cards" class="grid grid-cols-5 gap-4 mb-8"></div>
+      <div id="stats-cards" class="grid grid-cols-6 gap-4 mb-8"></div>
       <div class="grid grid-cols-2 gap-6 mb-6">
         <div class="bg-white rounded-xl border border-gray-200 p-5">
           <div class="flex items-center justify-between mb-4">
@@ -372,6 +373,17 @@
           </div>
           <ul id="open-repairs-list" class="space-y-3"></ul>
         </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-semibold text-gray-900">添付文書 更新チェック</h2>
+            <p class="text-xs text-gray-500 mt-0.5">PMDAに登録された添付文書に更新がないか確認します</p>
+          </div>
+          <button onclick="demoPmdaCheck()" class="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-colors">今すぐ確認</button>
+        </div>
+        <div id="pmda-check-result" class="hidden mb-4 bg-purple-50 border border-purple-200 text-purple-800 text-sm rounded-lg px-4 py-2"></div>
+        <ul id="pmda-updates-list" class="space-y-2"></ul>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4">
@@ -607,6 +619,8 @@
             </div>
             <input type="file" id="doc-file-attachment" accept=".pdf,image/*" class="hidden" onchange="docFileSelected(event,'attachment')">
             <input type="url" id="f-attachmentUrl" placeholder="https://..." class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" oninput="docUrlInput('attachment',this.value)">
+            <input type="hidden" id="f-pmdaApprovalNumber">
+            <input type="hidden" id="f-pmdaDocUpdatedAt">
           </div>
           <!-- カタログ -->
           <div class="flex flex-col gap-2">
@@ -820,10 +834,10 @@
 // ==================== データ ====================
 let db = {
   devices: [
-    { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象' },
-    { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '' },
-    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '' },
-    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '' },
+    { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象', pmdaApprovalNumber: '20150BZX00234000', pmdaDocUpdatedAt: '2024-03-01', pmdaUpdateAvailable: false },
+    { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false },
+    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false },
+    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true },
   ],
   inspections: [
     { id: 'i1', deviceId: 'd1', scheduledAt: '2026-06-29', intervalDays: 365, description: '年次定期点検', completed: false },
@@ -934,12 +948,14 @@ function renderDashboard() {
     openRepairs: db.repairLogs.filter(r => r.status === 'OPEN' || r.status === 'IN_PROGRESS').length,
   };
 
+  const pmdaUpdateCount = db.devices.filter(d => d.pmdaUpdateAvailable).length;
   document.getElementById('stats-cards').innerHTML = [
     { label: '総機器数', value: stats.total, cls: 'text-gray-900' },
     { label: '稼働中', value: stats.active, cls: 'text-green-600' },
     { label: '修理中', value: stats.repair, cls: stats.repair > 0 ? 'text-orange-500' : 'text-gray-900' },
     { label: '点検期限超過', value: stats.overdue, cls: stats.overdue > 0 ? 'text-red-600' : 'text-gray-900' },
     { label: '未対応修理', value: stats.openRepairs, cls: stats.openRepairs > 0 ? 'text-yellow-500' : 'text-gray-900' },
+    { label: '添付文書更新', value: pmdaUpdateCount, cls: pmdaUpdateCount > 0 ? 'text-purple-600' : 'text-gray-900' },
   ].map(s => `
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-sm text-gray-500 mb-1">${s.label}</p>
@@ -984,6 +1000,37 @@ function renderDashboard() {
       <td class="py-2 text-gray-500">${fmtDate(m.performedAt)}</td>
     </tr>`;
   }).join('');
+
+  const pmdaUpdated = db.devices.filter(d => d.pmdaUpdateAvailable);
+  document.getElementById('pmda-updates-list').innerHTML = pmdaUpdated.length === 0
+    ? '<li class="text-sm text-gray-400">更新が必要な添付文書はありません</li>'
+    : pmdaUpdated.map(d => `
+      <li class="flex items-center gap-3 text-sm">
+        <span class="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0"></span>
+        <span class="font-medium text-gray-900">${d.name}</span>
+        <span class="text-gray-400 text-xs">(${d.deviceCode})</span>
+        <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full ml-auto">更新あり</span>
+      </li>`).join('');
+}
+
+function demoPmdaCheck() {
+  const btn = event.target;
+  btn.textContent = '確認中...';
+  btn.disabled = true;
+  setTimeout(() => {
+    // Demo: randomly mark one device with pmdaApprovalNumber as updated
+    const candidates = db.devices.filter(d => d.pmdaApprovalNumber);
+    const updated = candidates.length > 0 ? Math.floor(Math.random() * 2) : 0;
+    if (updated > 0 && candidates.length > 0) {
+      candidates[0].pmdaUpdateAvailable = true;
+    }
+    const resultEl = document.getElementById('pmda-check-result');
+    resultEl.textContent = `${candidates.length}件を確認しました。${updated > 0 ? `${updated}件に更新があります。` : '更新はありません。'}`;
+    resultEl.classList.remove('hidden');
+    btn.textContent = '今すぐ確認';
+    btn.disabled = false;
+    renderDashboard();
+  }, 1500);
 }
 
 // ==================== 機器台帳 ====================
@@ -1005,7 +1052,12 @@ function renderDevices() {
         const isOverdue = ni && new Date(ni.scheduledAt) < new Date();
         return `<tr class="hover:bg-gray-50">
           <td class="px-4 py-3 font-mono text-xs text-gray-600">${d.deviceCode}</td>
-          <td class="px-4 py-3 font-medium text-gray-900">${d.name}</td>
+          <td class="px-4 py-3 font-medium text-gray-900">
+            <div class="flex items-center gap-2">
+              ${d.name}
+              ${d.pmdaUpdateAvailable ? '<span class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">添付文書更新</span>' : ''}
+            </div>
+          </td>
           <td class="px-4 py-3 text-gray-600">${d.category}</td>
           <td class="px-4 py-3 text-gray-600"><div>${d.manufacturer}</div><div class="text-xs text-gray-400">${d.model}</div></td>
           <td class="px-4 py-3 text-gray-600">${d.location}</td>
@@ -1138,11 +1190,19 @@ function demoSearchPmda() {
 function applyPmdaResult(r) {
   if (!pmdaTargetField) return;
   document.getElementById(pmdaTargetField).value = r.pdfUrl;
-  // Also update the cover preview
-  const type = pmdaTargetField.replace('f-', '').replace('Url', '').replace('attachment', 'attachment').replace('catalog', 'catalog').replace('manual', 'manual');
   const typeKey = { attachmentUrl: 'attachment', catalogUrl: 'catalog', manualUrl: 'manual' };
   const docType = typeKey[pmdaTargetField.replace('f-', '')];
   if (docType) docSetUrl(docType, r.pdfUrl);
+  // Store PMDA metadata when attaching the main 添付文書
+  if (pmdaTargetField === 'f-attachmentUrl') {
+    document.getElementById('f-name').value = r.name || document.getElementById('f-name').value;
+    document.getElementById('f-manufacturer').value = r.manufacturer || document.getElementById('f-manufacturer').value;
+    // Store hidden approval number and updatedAt for the device save
+    const hiddenApproval = document.getElementById('f-pmdaApprovalNumber');
+    const hiddenUpdatedAt = document.getElementById('f-pmdaDocUpdatedAt');
+    if (hiddenApproval) hiddenApproval.value = r.approvalNumber || '';
+    if (hiddenUpdatedAt) hiddenUpdatedAt.value = r.updatedAt || '';
+  }
   closeModal('modal-pmda');
 }
 
@@ -1174,6 +1234,12 @@ function openDeviceModal(id) {
     docSetUrl(type, d ? (d[urlKey] || '') : '');
   });
 
+  // PMDA metadata
+  const approvalEl = document.getElementById('f-pmdaApprovalNumber');
+  const updatedAtEl = document.getElementById('f-pmdaDocUpdatedAt');
+  if (approvalEl) approvalEl.value = d ? (d.pmdaApprovalNumber || '') : '';
+  if (updatedAtEl) updatedAtEl.value = d ? (d.pmdaDocUpdatedAt || '') : '';
+
   document.getElementById('modal-device').classList.remove('hidden');
 }
 
@@ -1196,6 +1262,12 @@ function saveDevice() {
     const el = document.getElementById('f-' + docKeyMap[type]);
     if (el) vals[docKeyMap[type]] = el.value;
   });
+  // PMDA metadata
+  const approvalEl = document.getElementById('f-pmdaApprovalNumber');
+  const updatedAtEl = document.getElementById('f-pmdaDocUpdatedAt');
+  vals.pmdaApprovalNumber = approvalEl?.value || '';
+  vals.pmdaDocUpdatedAt = updatedAtEl?.value || '';
+  vals.pmdaUpdateAvailable = false;
 
   if (!vals.deviceCode || !vals.name || !vals.category || !vals.location || !vals.manufacturer || !vals.model) {
     alert('必須項目を入力してください');

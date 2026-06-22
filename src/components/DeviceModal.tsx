@@ -42,6 +42,8 @@ interface DeviceFormData {
   attachmentUrl: string;
   catalogUrl: string;
   manualUrl: string;
+  pmdaApprovalNumber: string;
+  pmdaDocUpdatedAt: string;
 }
 
 interface DeviceModalProps {
@@ -95,6 +97,8 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     attachmentUrl: device?.attachmentUrl ?? "",
     catalogUrl: device?.catalogUrl ?? "",
     manualUrl: device?.manualUrl ?? "",
+    pmdaApprovalNumber: device?.pmdaApprovalNumber ?? "",
+    pmdaDocUpdatedAt: device?.pmdaDocUpdatedAt ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -107,6 +111,11 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
       name: r.name || f.name,
       manufacturer: r.manufacturer || f.manufacturer,
       [pmdaTarget]: r.pdfUrl,
+      // Only track PMDA metadata when attaching the main 添付文書
+      ...(pmdaTarget === "attachmentUrl" ? {
+        pmdaApprovalNumber: r.approvalNumber || f.pmdaApprovalNumber,
+        pmdaDocUpdatedAt: r.updatedAt || f.pmdaDocUpdatedAt,
+      } : {}),
     }));
   }
 
