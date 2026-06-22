@@ -71,6 +71,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       isCleanField: body.isCleanField ?? false,
       cleanFieldCategory: body.cleanFieldCategory || null,
       photoUrl: body.photoUrl || null,
+      attachmentUrl: body.attachmentUrl || null,
+      catalogUrl: body.catalogUrl || null,
+      manualUrl: body.manualUrl || null,
     },
   });
 

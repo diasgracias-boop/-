@@ -57,6 +57,9 @@ model Device {
   isCleanField     Boolean      @default(false)
   cleanFieldCategory String?
   photoUrl         String?
+  attachmentUrl    String?
+  catalogUrl       String?
+  manualUrl        String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 

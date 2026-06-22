@@ -89,6 +89,22 @@
   .btn-secondary { background: #f3f4f6; color: #374151; }
   .btn-secondary:hover { background: #e5e7eb; }
 
+  /* Document cards */
+  .doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+  .doc-card { display: flex; flex-direction: column; gap: 8px; }
+  .doc-cover { height: 160px; background: #f9fafb; border: 2px dashed #e5e7eb; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; overflow: hidden; position: relative; cursor: pointer; transition: border-color .15s; }
+  .doc-cover.has-pdf { border-style: solid; border-color: #e5e7eb; background: #fff; }
+  .doc-cover:hover { border-color: #93c5fd; }
+  .doc-cover canvas { width: 100%; height: 100%; object-fit: contain; }
+  .doc-cover .cover-label { font-size: 11px; font-weight: 600; color: #6b7280; }
+  .doc-cover .cover-empty { font-size: 11px; color: #9ca3af; }
+  .doc-cover .open-btn { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; opacity: 0; transition: opacity .15s; background: linear-gradient(transparent 50%, rgba(0,0,0,.15)); }
+  .doc-cover:hover .open-btn { opacity: 1; }
+  .open-btn span { background: rgba(0,0,0,.7); color: #fff; font-size: 11px; padding: 3px 10px; border-radius: 4px; }
+  .doc-url-input { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 6px 10px; font-size: 11px; outline: none; }
+  .doc-pmda-btn { width: 100%; background: #f0fdf4; border: 1px solid #86efac; color: #15803d; border-radius: 8px; padding: 6px; font-size: 11px; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .doc-pmda-btn:hover { background: #dcfce7; }
+
   /* Toast */
   .toast { display: none; position: fixed; bottom: 24px; right: 24px; background: #111827; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,.3); z-index: 999; animation: fadeIn .2s; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
@@ -131,7 +147,7 @@
 <div class="modal">
   <div class="modal-header">
     <h2>新規機器登録</h2>
-    <button class="pmda-btn" onclick="openPmda()">📄 PMDAから添付文書を取得</button>
+    <button class="pmda-btn" onclick="openPmdaFor('attachmentUrl')">📄 PMDAから添付文書を取得</button>
   </div>
 
   <div class="tabs">
@@ -313,24 +329,82 @@
 
     <!-- ========== 廃棄・その他 ========== -->
     <div id="panel-disposal" class="tab-panel space-y">
-      <div class="grid-2">
-        <div>
-          <label>廃棄/未稼働</label>
-          <select id="disposalStatus" onchange="toggleDisposalDates()">
-            <option value="">-</option>
-            <option value="DISPOSED">廃棄</option>
-            <option value="INACTIVE">未稼働</option>
-          </select>
+
+      <!-- 添付書類 3列 -->
+      <div>
+        <p class="section-title" style="margin-bottom:12px">添付書類</p>
+        <div class="doc-grid">
+          <!-- 添付文書 -->
+          <div class="doc-card">
+            <div class="doc-cover" id="cover-attachment" onclick="openDocUrl('attachmentUrl')">
+              <canvas id="canvas-attachment" style="display:none;width:100%;height:100%;object-fit:contain"></canvas>
+              <div id="empty-attachment">
+                <span style="font-size:28px;color:#d1d5db">📄</span>
+                <span class="cover-label">添付文書</span>
+                <span class="cover-empty">未登録</span>
+              </div>
+              <div class="open-btn"><span>PDFを開く →</span></div>
+            </div>
+            <input type="url" class="doc-url-input" id="attachmentUrl" placeholder="https://..." oninput="onDocUrlChange('attachment')">
+            <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('attachmentUrl')">📄 PMDAから取得</button>
+          </div>
+          <!-- カタログ -->
+          <div class="doc-card">
+            <div class="doc-cover" id="cover-catalog" onclick="openDocUrl('catalogUrl')">
+              <canvas id="canvas-catalog" style="display:none;width:100%;height:100%;object-fit:contain"></canvas>
+              <div id="empty-catalog">
+                <span style="font-size:28px;color:#d1d5db">📋</span>
+                <span class="cover-label">カタログ</span>
+                <span class="cover-empty">未登録</span>
+              </div>
+              <div class="open-btn"><span>PDFを開く →</span></div>
+            </div>
+            <input type="url" class="doc-url-input" id="catalogUrl" placeholder="https://..." oninput="onDocUrlChange('catalog')">
+            <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('catalogUrl')">📄 PMDAから取得</button>
+          </div>
+          <!-- 取扱説明書 -->
+          <div class="doc-card">
+            <div class="doc-cover" id="cover-manual" onclick="openDocUrl('manualUrl')">
+              <canvas id="canvas-manual" style="display:none;width:100%;height:100%;object-fit:contain"></canvas>
+              <div id="empty-manual">
+                <span style="font-size:28px;color:#d1d5db">📖</span>
+                <span class="cover-label">取扱説明書</span>
+                <span class="cover-empty">未登録</span>
+              </div>
+              <div class="open-btn"><span>PDFを開く →</span></div>
+            </div>
+            <input type="url" class="doc-url-input" id="manualUrl" placeholder="https://..." oninput="onDocUrlChange('manual')">
+            <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('manualUrl')">📄 PMDAから取得</button>
+          </div>
         </div>
       </div>
-      <div class="grid-2" id="disposalDates" style="display:none">
-        <div>
-          <label>廃棄日</label>
-          <input type="date" id="disposalDate">
+
+      <div class="section-divider">
+        <label>写真URL</label>
+        <input type="url" id="photoUrl" placeholder="https://..." oninput="previewPhoto()">
+        <img id="photoPreview" class="photo-preview" alt="機器写真">
+      </div>
+
+      <div class="section-divider">
+        <div class="grid-2">
+          <div>
+            <label>廃棄/未稼働</label>
+            <select id="disposalStatus" onchange="toggleDisposalDates()">
+              <option value="">-</option>
+              <option value="DISPOSED">廃棄</option>
+              <option value="INACTIVE">未稼働</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label>未稼働日</label>
-          <input type="date" id="inactiveDate">
+        <div class="grid-2" id="disposalDates" style="display:none;margin-top:12px">
+          <div>
+            <label>廃棄日</label>
+            <input type="date" id="disposalDate">
+          </div>
+          <div>
+            <label>未稼働日</label>
+            <input type="date" id="inactiveDate">
+          </div>
         </div>
       </div>
 
@@ -344,12 +418,6 @@
           <label>清潔野機器分類</label>
           <input type="text" id="cleanFieldCategory" placeholder="例: クラスII">
         </div>
-      </div>
-
-      <div class="section-divider">
-        <label>写真URL</label>
-        <input type="url" id="photoUrl" placeholder="https://..." oninput="previewPhoto()">
-        <img id="photoPreview" class="photo-preview" alt="機器写真">
       </div>
     </div>
 
@@ -480,12 +548,73 @@
     setTimeout(() => { t.style.display = 'none'; }, 2500);
   }
 
-  // ===== PMDA検索 =====
-  function openPmda() {
-    document.getElementById('pmdaName').value = document.getElementById('name').value;
-    document.getElementById('pmdaMaker').value = document.getElementById('manufacturer').value;
+  // ===== PDF.js カバープレビュー =====
+  let pdfjs = null;
+  async function getPdfJs() {
+    if (pdfjs) return pdfjs;
+    // PDF.js CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs';
+    script.type = 'module';
+    document.head.appendChild(script);
+    await new Promise(r => setTimeout(r, 1000));
+    // workerを直接使う方法
+    return null; // CDN読み込みはコンテキスト制限のためモックで代用
+  }
+
+  let pmdaTargetField = null;
+
+  function openPmdaFor(fieldId) {
+    pmdaTargetField = fieldId;
+    const name = document.getElementById('name').value;
+    const maker = document.getElementById('manufacturer').value;
+    document.getElementById('pmdaName').value = name;
+    document.getElementById('pmdaMaker').value = maker;
     document.getElementById('pmdaOverlay').classList.add('open');
   }
+
+  function onDocUrlChange(docKey) {
+    const url = document.getElementById(docKey + 'Url').value.trim();
+    const emptyEl = document.getElementById('empty-' + docKey);
+    const coverEl = document.getElementById('cover-' + docKey);
+
+    if (url) {
+      emptyEl.style.display = 'none';
+      coverEl.classList.add('has-pdf');
+      renderPdfCover(docKey, url);
+    } else {
+      emptyEl.style.display = 'flex';
+      coverEl.classList.remove('has-pdf');
+      const canvas = document.getElementById('canvas-' + docKey);
+      canvas.style.display = 'none';
+    }
+  }
+
+  function openDocUrl(fieldId) {
+    const url = document.getElementById(fieldId).value.trim();
+    if (url) window.open(url, '_blank');
+  }
+
+  async function renderPdfCover(docKey, url) {
+    const canvas = document.getElementById('canvas-' + docKey);
+
+    // デモ環境: CORS制限があるためiframeプレビューで代用
+    const cover = document.getElementById('cover-' + docKey);
+    const empty = document.getElementById('empty-' + docKey);
+
+    // iframeを使ったプレビュー（同オリジンPDFのみ機能）
+    let iframe = cover.querySelector('iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.style.cssText = 'width:100%;height:100%;border:none;pointer-events:none;';
+      cover.insertBefore(iframe, cover.querySelector('.open-btn'));
+    }
+    iframe.src = url;
+    canvas.style.display = 'none';
+    empty.style.display = 'none';
+  }
+
+  // ===== PMDA検索 =====
   function closePmda() {
     document.getElementById('pmdaOverlay').classList.remove('open');
   }
@@ -582,9 +711,15 @@
   function applyPmdaResult(r) {
     if (r.name) document.getElementById('name').value = r.name;
     if (r.manufacturer) document.getElementById('manufacturer').value = r.manufacturer;
-    if (r.pdfUrl) document.getElementById('photoUrl').value = r.pdfUrl;
+
+    if (r.pdfUrl && pmdaTargetField) {
+      document.getElementById(pmdaTargetField).value = r.pdfUrl;
+      // docKeyを導出してプレビュー更新
+      const docKey = pmdaTargetField.replace('Url', '');
+      onDocUrlChange(docKey);
+    }
     closePmda();
-    // 廃棄・その他タブに切り替えてURLを確認できるようにする
+    pmdaTargetField = null;
     showToast('✅ 添付文書URLを設定しました');
   }
 

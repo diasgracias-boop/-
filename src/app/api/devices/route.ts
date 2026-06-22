@@ -83,6 +83,9 @@ export async function POST(req: NextRequest) {
       isCleanField: body.isCleanField ?? false,
       cleanFieldCategory: body.cleanFieldCategory || null,
       photoUrl: body.photoUrl || null,
+      attachmentUrl: body.attachmentUrl || null,
+      catalogUrl: body.catalogUrl || null,
+      manualUrl: body.manualUrl || null,
     },
   });
 

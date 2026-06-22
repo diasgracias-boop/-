@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
+import PdfCover from "./PdfCover";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
+
+type DocField = "attachmentUrl" | "catalogUrl" | "manualUrl";
 
 interface DeviceFormData {
   deviceCode: string;
@@ -36,6 +39,9 @@ interface DeviceFormData {
   isCleanField: boolean;
   cleanFieldCategory: string;
   photoUrl: string;
+  attachmentUrl: string;
+  catalogUrl: string;
+  manualUrl: string;
 }
 
 interface DeviceModalProps {
@@ -86,18 +92,26 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     isCleanField: device?.isCleanField ?? false,
     cleanFieldCategory: device?.cleanFieldCategory ?? "",
     photoUrl: device?.photoUrl ?? "",
+    attachmentUrl: device?.attachmentUrl ?? "",
+    catalogUrl: device?.catalogUrl ?? "",
+    manualUrl: device?.manualUrl ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [showPmda, setShowPmda] = useState(false);
+  const [pmdaTarget, setPmdaTarget] = useState<DocField | null>(null);
 
   function applyPmdaResult(r: PmdaResult) {
+    if (!pmdaTarget) return;
     setForm((f) => ({
       ...f,
       name: r.name || f.name,
       manufacturer: r.manufacturer || f.manufacturer,
-      photoUrl: r.pdfUrl,
+      [pmdaTarget]: r.pdfUrl,
     }));
+  }
+
+  function openPmda(field: DocField) {
+    setPmdaTarget(field);
   }
 
   function update<K extends keyof DeviceFormData>(key: K, value: DeviceFormData[K]) {
@@ -134,25 +148,18 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
             {device ? "機器情報を編集" : "新規機器登録"}
           </h2>
-          <button
-            type="button"
-            onClick={() => setShowPmda(true)}
-            className="flex items-center gap-1.5 text-xs bg-green-50 border border-green-300 text-green-700 rounded-lg px-3 py-1.5 hover:bg-green-100 transition-colors font-medium"
-          >
-            📄 PMDAから添付文書を取得
-          </button>
         </div>
 
-        {showPmda && (
+        {pmdaTarget && (
           <PmdaSearchModal
             initialName={form.name}
             initialManufacturer={form.manufacturer}
             onSelect={applyPmdaResult}
-            onClose={() => setShowPmda(false)}
+            onClose={() => setPmdaTarget(null)}
           />
         )}
 
@@ -342,7 +349,59 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
           {/* ===== 廃棄・その他 ===== */}
           {tab === "廃棄・その他" && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              {/* 書類セクション */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">添付書類</h3>
+
+                {/* カバープレビュー 3列 */}
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {(
+                    [
+                      { field: "attachmentUrl" as DocField, label: "添付文書" },
+                      { field: "catalogUrl" as DocField, label: "カタログ" },
+                      { field: "manualUrl" as DocField, label: "取扱説明書" },
+                    ] as const
+                  ).map(({ field, label }) => (
+                    <div key={field} className="flex flex-col gap-2">
+                      {form[field] ? (
+                        <PdfCover url={form[field]} label={label} />
+                      ) : (
+                        <div className="h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-1">
+                          <span className="text-2xl text-gray-300">📄</span>
+                          <span className="text-xs text-gray-400">{label}</span>
+                          <span className="text-xs text-gray-300">未登録</span>
+                        </div>
+                      )}
+                      {/* URL入力 + PMDAボタン */}
+                      <input
+                        type="url"
+                        value={form[field]}
+                        onChange={(e) => update(field, e.target.value)}
+                        placeholder="https://..."
+                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openPmda(field)}
+                        className="w-full flex items-center justify-center gap-1 text-xs bg-green-50 border border-green-300 text-green-700 rounded-lg py-1.5 hover:bg-green-100 transition-colors font-medium"
+                      >
+                        PMDAから取得
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <label className={labelCls}>写真URL</label>
+                <input type="url" value={form.photoUrl} onChange={(e) => update("photoUrl", e.target.value)} placeholder="https://..." className={inputCls} />
+                {form.photoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.photoUrl} alt="機器写真" className="mt-2 h-32 object-contain rounded border border-gray-200" />
+                )}
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>廃棄/未稼働</label>
                   <select value={form.disposalStatus} onChange={(e) => update("disposalStatus", e.target.value)} className={inputCls}>
@@ -352,16 +411,18 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>廃棄日</label>
-                  <input type="date" value={form.disposalDate} onChange={(e) => update("disposalDate", e.target.value)} className={inputCls} />
+              {form.disposalStatus && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>廃棄日</label>
+                    <input type="date" value={form.disposalDate} onChange={(e) => update("disposalDate", e.target.value)} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>未稼働日</label>
+                    <input type="date" value={form.inactiveDate} onChange={(e) => update("inactiveDate", e.target.value)} className={inputCls} />
+                  </div>
                 </div>
-                <div>
-                  <label className={labelCls}>未稼働日</label>
-                  <input type="date" value={form.inactiveDate} onChange={(e) => update("inactiveDate", e.target.value)} className={inputCls} />
-                </div>
-              </div>
+              )}
 
               <div className="border-t border-gray-200 pt-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">清潔野機器</h3>
@@ -380,15 +441,6 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                     <label className={labelCls}>清潔野機器分類</label>
                     <input type="text" value={form.cleanFieldCategory} onChange={(e) => update("cleanFieldCategory", e.target.value)} className={inputCls} />
                   </div>
-                )}
-              </div>
-
-              <div className="border-t border-gray-200 pt-4">
-                <label className={labelCls}>写真URL</label>
-                <input type="url" value={form.photoUrl} onChange={(e) => update("photoUrl", e.target.value)} placeholder="https://..." className={inputCls} />
-                {form.photoUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={form.photoUrl} alt="機器写真" className="mt-2 h-32 object-contain rounded border border-gray-200" />
                 )}
               </div>
             </>
