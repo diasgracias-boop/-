@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
-import PdfCover from "./PdfCover";
+import DocumentUpload from "./DocumentUpload";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
 
 type DocField = "attachmentUrl" | "catalogUrl" | "manualUrl";
@@ -352,42 +352,22 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
               {/* 書類セクション */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">添付書類</h3>
-
-                {/* カバープレビュー 3列 */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-3 gap-4">
                   {(
                     [
-                      { field: "attachmentUrl" as DocField, label: "添付文書" },
-                      { field: "catalogUrl" as DocField, label: "カタログ" },
-                      { field: "manualUrl" as DocField, label: "取扱説明書" },
+                      { field: "attachmentUrl" as DocField, label: "添付文書", icon: "📄" },
+                      { field: "catalogUrl"    as DocField, label: "カタログ",  icon: "📋" },
+                      { field: "manualUrl"     as DocField, label: "取扱説明書", icon: "📖" },
                     ] as const
-                  ).map(({ field, label }) => (
-                    <div key={field} className="flex flex-col gap-2">
-                      {form[field] ? (
-                        <PdfCover url={form[field]} label={label} />
-                      ) : (
-                        <div className="h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-1">
-                          <span className="text-2xl text-gray-300">📄</span>
-                          <span className="text-xs text-gray-400">{label}</span>
-                          <span className="text-xs text-gray-300">未登録</span>
-                        </div>
-                      )}
-                      {/* URL入力 + PMDAボタン */}
-                      <input
-                        type="url"
-                        value={form[field]}
-                        onChange={(e) => update(field, e.target.value)}
-                        placeholder="https://..."
-                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => openPmda(field)}
-                        className="w-full flex items-center justify-center gap-1 text-xs bg-green-50 border border-green-300 text-green-700 rounded-lg py-1.5 hover:bg-green-100 transition-colors font-medium"
-                      >
-                        PMDAから取得
-                      </button>
-                    </div>
+                  ).map(({ field, label, icon }) => (
+                    <DocumentUpload
+                      key={field}
+                      label={label}
+                      icon={icon}
+                      value={form[field]}
+                      onChange={(url) => update(field, url)}
+                      onPmdaClick={() => openPmda(field)}
+                    />
                   ))}
                 </div>
               </div>

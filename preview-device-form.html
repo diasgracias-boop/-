@@ -102,8 +102,15 @@
   .doc-cover:hover .open-btn { opacity: 1; }
   .open-btn span { background: rgba(0,0,0,.7); color: #fff; font-size: 11px; padding: 3px 10px; border-radius: 4px; }
   .doc-url-input { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 6px 10px; font-size: 11px; outline: none; }
-  .doc-pmda-btn { width: 100%; background: #f0fdf4; border: 1px solid #86efac; color: #15803d; border-radius: 8px; padding: 6px; font-size: 11px; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .doc-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .doc-upload-btn { background: #f3f4f6; border: none; color: #374151; border-radius: 8px; padding: 6px; font-size: 11px; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .doc-upload-btn:hover { background: #e5e7eb; }
+  .doc-pmda-btn { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; border-radius: 8px; padding: 6px; font-size: 11px; font-weight: 500; cursor: pointer; transition: background .15s; }
   .doc-pmda-btn:hover { background: #dcfce7; }
+  .doc-cover.dragging { border-color: #3b82f6 !important; background: #eff6ff !important; }
+  .upload-progress { display:none; position:absolute; inset:0; background:rgba(255,255,255,.85); flex-direction:column; align-items:center; justify-content:center; gap:6px; z-index:5; }
+  .upload-progress.show { display:flex; }
+  .spinner-sm { width:20px; height:20px; border:2px solid rgba(37,99,235,.2); border-top-color:#2563eb; border-radius:50%; animation:spin .6s linear infinite; }
 
   /* Toast */
   .toast { display: none; position: fixed; bottom: 24px; right: 24px; background: #111827; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,.3); z-index: 999; animation: fadeIn .2s; }
@@ -336,45 +343,63 @@
         <div class="doc-grid">
           <!-- 添付文書 -->
           <div class="doc-card">
-            <div class="doc-cover" id="cover-attachment" onclick="openDocUrl('attachmentUrl')">
+            <div class="doc-cover" id="cover-attachment" onclick="openDocUrl('attachmentUrl')"
+              ondragover="handleDragOver(event,'attachment')" ondragleave="handleDragLeave('attachment')" ondrop="handleDrop(event,'attachment')">
+              <div class="upload-progress" id="progress-attachment"><div class="spinner-sm"></div><span style="font-size:11px;color:#6b7280">アップロード中...</span></div>
               <canvas id="canvas-attachment" style="display:none;width:100%;height:100%;object-fit:contain"></canvas>
               <div id="empty-attachment">
                 <span style="font-size:28px;color:#d1d5db">📄</span>
                 <span class="cover-label">添付文書</span>
-                <span class="cover-empty">未登録</span>
+                <span class="cover-empty">クリックまたはドロップ</span>
               </div>
               <div class="open-btn"><span>PDFを開く →</span></div>
             </div>
             <input type="url" class="doc-url-input" id="attachmentUrl" placeholder="https://..." oninput="onDocUrlChange('attachment')">
-            <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('attachmentUrl')">📄 PMDAから取得</button>
+            <div class="doc-btn-row">
+              <button type="button" class="doc-upload-btn" onclick="triggerUpload('attachment')">⬆ アップロード</button>
+              <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('attachmentUrl')">📄 PMDA</button>
+            </div>
+            <input type="file" id="file-attachment" accept=".pdf,image/*" style="display:none" onchange="handleFileSelect(event,'attachment')">
           </div>
           <!-- カタログ -->
           <div class="doc-card">
-            <div class="doc-cover" id="cover-catalog" onclick="openDocUrl('catalogUrl')">
+            <div class="doc-cover" id="cover-catalog" onclick="openDocUrl('catalogUrl')"
+              ondragover="handleDragOver(event,'catalog')" ondragleave="handleDragLeave('catalog')" ondrop="handleDrop(event,'catalog')">
+              <div class="upload-progress" id="progress-catalog"><div class="spinner-sm"></div><span style="font-size:11px;color:#6b7280">アップロード中...</span></div>
               <canvas id="canvas-catalog" style="display:none;width:100%;height:100%;object-fit:contain"></canvas>
-              <div id="empty-catalog">
+              <div id="empty-catalog" class="flex flex-col items-center gap-1">
                 <span style="font-size:28px;color:#d1d5db">📋</span>
                 <span class="cover-label">カタログ</span>
-                <span class="cover-empty">未登録</span>
+                <span class="cover-empty">クリックまたはドロップ</span>
               </div>
               <div class="open-btn"><span>PDFを開く →</span></div>
             </div>
             <input type="url" class="doc-url-input" id="catalogUrl" placeholder="https://..." oninput="onDocUrlChange('catalog')">
-            <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('catalogUrl')">📄 PMDAから取得</button>
+            <div class="doc-btn-row">
+              <button type="button" class="doc-upload-btn" onclick="triggerUpload('catalog')">⬆ アップロード</button>
+              <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('catalogUrl')">📄 PMDA</button>
+            </div>
+            <input type="file" id="file-catalog" accept=".pdf,image/*" style="display:none" onchange="handleFileSelect(event,'catalog')">
           </div>
           <!-- 取扱説明書 -->
           <div class="doc-card">
-            <div class="doc-cover" id="cover-manual" onclick="openDocUrl('manualUrl')">
+            <div class="doc-cover" id="cover-manual" onclick="openDocUrl('manualUrl')"
+              ondragover="handleDragOver(event,'manual')" ondragleave="handleDragLeave('manual')" ondrop="handleDrop(event,'manual')">
+              <div class="upload-progress" id="progress-manual"><div class="spinner-sm"></div><span style="font-size:11px;color:#6b7280">アップロード中...</span></div>
               <canvas id="canvas-manual" style="display:none;width:100%;height:100%;object-fit:contain"></canvas>
               <div id="empty-manual">
                 <span style="font-size:28px;color:#d1d5db">📖</span>
                 <span class="cover-label">取扱説明書</span>
-                <span class="cover-empty">未登録</span>
+                <span class="cover-empty">クリックまたはドロップ</span>
               </div>
               <div class="open-btn"><span>PDFを開く →</span></div>
             </div>
             <input type="url" class="doc-url-input" id="manualUrl" placeholder="https://..." oninput="onDocUrlChange('manual')">
-            <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('manualUrl')">📄 PMDAから取得</button>
+            <div class="doc-btn-row">
+              <button type="button" class="doc-upload-btn" onclick="triggerUpload('manual')">⬆ アップロード</button>
+              <button type="button" class="doc-pmda-btn" onclick="openPmdaFor('manualUrl')">📄 PMDA</button>
+            </div>
+            <input type="file" id="file-manual" accept=".pdf,image/*" style="display:none" onchange="handleFileSelect(event,'manual')">
           </div>
         </div>
       </div>
@@ -546,6 +571,45 @@
     const t = document.getElementById('toast');
     t.style.display = 'block';
     setTimeout(() => { t.style.display = 'none'; }, 2500);
+  }
+
+  // ===== ファイルアップロード =====
+  function triggerUpload(docKey) {
+    document.getElementById('file-' + docKey).click();
+  }
+
+  function handleDragOver(e, docKey) {
+    e.preventDefault();
+    document.getElementById('cover-' + docKey).classList.add('dragging');
+  }
+  function handleDragLeave(docKey) {
+    document.getElementById('cover-' + docKey).classList.remove('dragging');
+  }
+  function handleDrop(e, docKey) {
+    e.preventDefault();
+    document.getElementById('cover-' + docKey).classList.remove('dragging');
+    const file = e.dataTransfer.files?.[0];
+    if (file) simulateUpload(docKey, file);
+  }
+  function handleFileSelect(e, docKey) {
+    const file = e.target.files?.[0];
+    if (file) simulateUpload(docKey, file);
+  }
+
+  // デモ環境: 実際のアプリでは /api/upload に POST する
+  async function simulateUpload(docKey, file) {
+    const progress = document.getElementById('progress-' + docKey);
+    progress.classList.add('show');
+    await new Promise(r => setTimeout(r, 1000)); // アップロード遅延をシミュレート
+
+    // デモではObjectURLを生成してプレビュー
+    const objectUrl = URL.createObjectURL(file);
+    const fieldId = docKey + 'Url';
+    document.getElementById(fieldId).value = objectUrl;
+    onDocUrlChange(docKey);
+
+    progress.classList.remove('show');
+    showToast(`✅ ${file.name} をアップロードしました（デモ）`);
   }
 
   // ===== PDF.js カバープレビュー =====
