@@ -23,6 +23,34 @@ export default function PmdaSearchModal({
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [searched, setSearched] = useState(false);
+  const [downloading, setDownloading] = useState<number | null>(null);
+  const [downloadError, setDownloadError] = useState("");
+
+  async function handleSelect(r: PmdaResult, index: number) {
+    setDownloading(index);
+    setDownloadError("");
+
+    // PMDAのPDFをサーバーにダウンロード保存
+    const filename = r.pdfUrl.split("/").pop() ?? "pmda.pdf";
+    const res = await fetch("/api/upload/download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: r.pdfUrl, filename }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      // ダウンロード失敗時はURLのまま渡す
+      setDownloadError(`保存失敗: ${data.error}。URLとして登録します。`);
+      onSelect(r);
+    } else {
+      // ローカル保存したパスで上書き
+      onSelect({ ...r, pdfUrl: data.url });
+    }
+
+    setDownloading(null);
+    onClose();
+  }
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -118,12 +146,15 @@ export default function PmdaSearchModal({
           {/* Results list */}
           {!loading && results.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs text-gray-500 mb-3">{results.length}件見つかりました。選択すると添付文書URLが登録されます。</p>
+              <p className="text-xs text-gray-500 mb-3">{results.length}件見つかりました。選択するとPDFをサーバーに保存します。</p>
+              {downloadError && (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs rounded-lg px-3 py-2">{downloadError}</div>
+              )}
               {results.map((r, i) => (
                 <div
                   key={i}
-                  className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-colors"
-                  onClick={() => { onSelect(r); onClose(); }}
+                  className={`border rounded-xl p-4 transition-colors ${downloading === i ? "border-blue-300 bg-blue-50" : "border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer"}`}
+                  onClick={() => downloading === null && handleSelect(r, i)}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -146,7 +177,14 @@ export default function PmdaSearchModal({
                       >
                         📄 PDFを確認
                       </a>
-                      <span className="text-xs bg-blue-600 text-white rounded-full px-2.5 py-0.5">選択</span>
+                      {downloading === i ? (
+                        <span className="text-xs bg-blue-100 text-blue-600 rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                          <span className="inline-block w-3 h-3 border border-blue-400 border-t-blue-600 rounded-full animate-spin" />
+                          保存中...
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-blue-600 text-white rounded-full px-2.5 py-0.5">選択・保存</span>
+                      )}
                     </div>
                   </div>
                 </div>
