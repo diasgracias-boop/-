@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import PmdaSearchModal from "./PmdaSearchModal";
+import type { PmdaResult } from "@/app/api/pmda/search/route";
 
 interface DeviceFormData {
   deviceCode: string;
@@ -87,6 +89,16 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showPmda, setShowPmda] = useState(false);
+
+  function applyPmdaResult(r: PmdaResult) {
+    setForm((f) => ({
+      ...f,
+      name: r.name || f.name,
+      manufacturer: r.manufacturer || f.manufacturer,
+      photoUrl: r.pdfUrl,
+    }));
+  }
 
   function update<K extends keyof DeviceFormData>(key: K, value: DeviceFormData[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -122,11 +134,27 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
             {device ? "機器情報を編集" : "新規機器登録"}
           </h2>
+          <button
+            type="button"
+            onClick={() => setShowPmda(true)}
+            className="flex items-center gap-1.5 text-xs bg-green-50 border border-green-300 text-green-700 rounded-lg px-3 py-1.5 hover:bg-green-100 transition-colors font-medium"
+          >
+            📄 PMDAから添付文書を取得
+          </button>
         </div>
+
+        {showPmda && (
+          <PmdaSearchModal
+            initialName={form.name}
+            initialManufacturer={form.manufacturer}
+            onSelect={applyPmdaResult}
+            onClose={() => setShowPmda(false)}
+          />
+        )}
 
         {/* Tab bar */}
         <div className="flex border-b border-gray-200 px-6">
