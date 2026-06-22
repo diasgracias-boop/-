@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>医療機器管理システム - ダッシュボード</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+
+<div class="flex h-screen">
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div class="p-4 border-b border-gray-200">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900">医療機器管理</p>
+          <p class="text-xs text-gray-500">システム</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-1">
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium text-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        ダッシュボード
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+        </svg>
+        機器台帳
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        点検スケジュール
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+        保守履歴
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        </svg>
+        修理・故障履歴
+      </a>
+    </nav>
+
+    <div class="p-3 border-t border-gray-200">
+      <div class="flex items-center gap-3 px-3 py-2">
+        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+          <span class="text-xs font-medium text-gray-600">A</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 truncate">管理者</p>
+          <p class="text-xs text-gray-500 truncate">admin@hospital.jp</p>
+        </div>
+      </div>
+      <button class="mt-1 w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        ログアウト
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="flex-1 overflow-auto">
+    <div class="p-6 max-w-7xl">
+      <h1 class="text-2xl font-bold text-gray-900 mb-6">ダッシュボード</h1>
+
+      <!-- Statistics Cards -->
+      <div class="grid grid-cols-5 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500 mb-1">総機器数</p>
+          <p class="text-3xl font-bold text-gray-900">45</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500 mb-1">稼働中</p>
+          <p class="text-3xl font-bold text-green-600">42</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500 mb-1">修理中</p>
+          <p class="text-3xl font-bold text-orange-500">2</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500 mb-1">点検期限超過</p>
+          <p class="text-3xl font-bold text-red-600">1</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500 mb-1">未対応修理</p>
+          <p class="text-3xl font-bold text-yellow-500">1</p>
+        </div>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div class="grid grid-cols-2 gap-6 mb-6">
+        <!-- Upcoming Inspections -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-semibold text-gray-900">30日以内の点検予定</h2>
+            <a href="#" class="text-sm text-blue-600 hover:underline">すべて表示</a>
+          </div>
+          <ul class="space-y-3">
+            <li class="flex items-start gap-3">
+              <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">心電計 <span class="text-gray-400 text-xs">(ECG-001)</span></p>
+                <p class="text-xs text-gray-500">2026-07-20 · 3F 内科病棟</p>
+                <p class="text-xs text-gray-600 mt-0.5">年次定期点検</p>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">MRI装置 <span class="text-gray-400 text-xs">(MRI-001)</span></p>
+                <p class="text-xs text-gray-500">2026-08-15 · B1F 放射線科</p>
+                <p class="text-xs text-gray-600 mt-0.5">半年点検・キャリブレーション</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Recent Repairs -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-semibold text-gray-900">未対応の修理・故障</h2>
+            <a href="#" class="text-sm text-blue-600 hover:underline">すべて表示</a>
+          </div>
+          <ul class="space-y-3">
+            <li class="flex items-start gap-3">
+              <div class="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-gray-900 truncate">人工呼吸器</p>
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">未対応</span>
+                </div>
+                <p class="text-xs text-gray-500">2026-05-10</p>
+                <p class="text-xs text-gray-600 mt-0.5 truncate">表示画面が点灯しない</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Recent Maintenance -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-900">最近の保守作業</h2>
+          <a href="#" class="text-sm text-blue-600 hover:underline">すべて表示</a>
+        </div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-gray-500 border-b border-gray-100">
+              <th class="pb-2 pr-4">機器名</th>
+              <th class="pb-2 pr-4">種別</th>
+              <th class="pb-2 pr-4">内容</th>
+              <th class="pb-2">実施日</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr class="hover:bg-gray-50">
+              <td class="py-2 pr-4 font-medium text-gray-900">心電計</td>
+              <td class="py-2 pr-4 text-gray-600">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">点検</span>
+              </td>
+              <td class="py-2 pr-4 text-gray-600 max-w-xs truncate">年次定期点検実施</td>
+              <td class="py-2 text-gray-500">2026-04-10</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

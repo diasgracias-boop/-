@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>医療機器管理システム - 機器台帳</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+
+<div class="flex h-screen">
+  <!-- SIDEBAR (簡略版) -->
+  <aside class="w-64 bg-white border-r border-gray-200">
+    <div class="p-4 border-b border-gray-200">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg"></div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900">医療機器管理</p>
+        </div>
+      </div>
+    </div>
+    <nav class="p-3 space-y-1">
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 text-sm">ダッシュボード</a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium text-sm">機器台帳</a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 text-sm">点検スケジュール</a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 text-sm">保守履歴</a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 text-sm">修理・故障履歴</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 overflow-auto">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">機器台帳</h1>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          + 機器を登録
+        </button>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="bg-white rounded-xl border border-gray-200 mb-4 p-4 flex gap-3 flex-wrap">
+        <input type="text" placeholder="機器名・コード・メーカーで検索..." class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-1 min-w-48 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option>すべてのステータス</option>
+          <option>稼働中</option>
+          <option>保守中</option>
+          <option>修理中</option>
+          <option>廃棄</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">機器コード</th>
+              <th class="px-4 py-3">機器名</th>
+              <th class="px-4 py-3">カテゴリ</th>
+              <th class="px-4 py-3">メーカー / モデル</th>
+              <th class="px-4 py-3">設置場所</th>
+              <th class="px-4 py-3">ステータス</th>
+              <th class="px-4 py-3">次回点検</th>
+              <th class="px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-mono text-xs text-gray-600">ECG-001</td>
+              <td class="px-4 py-3 font-medium text-gray-900">
+                <a href="#" class="hover:text-blue-600 hover:underline">心電計</a>
+              </td>
+              <td class="px-4 py-3 text-gray-600">診断機器</td>
+              <td class="px-4 py-3 text-gray-600">
+                <div>日本光電</div>
+                <div class="text-xs text-gray-400">ECG-2550</div>
+              </td>
+              <td class="px-4 py-3 text-gray-600">3F 内科病棟</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">稼働中</span>
+              </td>
+              <td class="px-4 py-3 text-gray-600">2026-07-20</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <a href="#" class="text-xs text-blue-600 hover:underline">編集</a>
+                  <a href="#" class="text-xs text-red-500 hover:underline">削除</a>
+                </div>
+              </td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-mono text-xs text-gray-600">MRI-001</td>
+              <td class="px-4 py-3 font-medium text-gray-900">
+                <a href="#" class="hover:text-blue-600 hover:underline">MRI装置</a>
+              </td>
+              <td class="px-4 py-3 text-gray-600">画像診断機器</td>
+              <td class="px-4 py-3 text-gray-600">
+                <div>シーメンス</div>
+                <div class="text-xs text-gray-400">MAGNETOM Lumina</div>
+              </td>
+              <td class="px-4 py-3 text-gray-600">B1F 放射線科</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">稼働中</span>
+              </td>
+              <td class="px-4 py-3 text-gray-600">2026-08-15</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <a href="#" class="text-xs text-blue-600 hover:underline">編集</a>
+                  <a href="#" class="text-xs text-red-500 hover:underline">削除</a>
+                </div>
+              </td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-mono text-xs text-gray-600">VNT-003</td>
+              <td class="px-4 py-3 font-medium text-gray-900">
+                <a href="#" class="hover:text-blue-600 hover:underline">人工呼吸器</a>
+              </td>
+              <td class="px-4 py-3 text-gray-600">治療機器</td>
+              <td class="px-4 py-3 text-gray-600">
+                <div>フクダ電子</div>
+                <div class="text-xs text-gray-400">VersaMed iVent 201</div>
+              </td>
+              <td class="px-4 py-3 text-gray-600">2F ICU</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">修理中</span>
+              </td>
+              <td class="px-4 py-3 text-gray-600">
+                <span class="text-xs text-red-600 font-medium">⚠ 2026-05-26</span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <a href="#" class="text-xs text-blue-600 hover:underline">編集</a>
+                  <a href="#" class="text-xs text-red-500 hover:underline">削除</a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
