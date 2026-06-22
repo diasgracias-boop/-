@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>機器登録フォーム</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif; background: #f3f4f6; display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 24px; }
+
+  .modal { background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); width: 100%; max-width: 760px; overflow: hidden; }
+
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; }
+  .modal-header h2 { font-size: 17px; font-weight: 600; color: #111827; }
+
+  /* Tabs */
+  .tabs { display: flex; border-bottom: 1px solid #e5e7eb; padding: 0 24px; }
+  .tab { padding: 12px 16px; font-size: 14px; font-weight: 500; border: none; border-bottom: 2px solid transparent; background: none; cursor: pointer; color: #6b7280; margin-bottom: -1px; transition: color .15s, border-color .15s; }
+  .tab.active { border-bottom-color: #2563eb; color: #2563eb; }
+  .tab:hover:not(.active) { color: #374151; }
+
+  /* Form */
+  form { padding: 24px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .space-y > * + * { margin-top: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+  input[type=text], input[type=date], input[type=number], input[type=url], select, textarea {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; color: #111827; outline: none; transition: border-color .15s, box-shadow .15s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  textarea { resize: vertical; }
+
+  .section-divider { border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 16px; }
+  .section-title { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 12px; }
+
+  /* Checkbox row */
+  .checkbox-row { display: flex; align-items: center; gap: 10px; }
+  .checkbox-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer; }
+  .checkbox-row label { margin: 0; cursor: pointer; }
+
+  /* Photo preview */
+  .photo-preview { margin-top: 10px; max-height: 140px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; display: none; }
+
+  /* Computed readonly */
+  .readonly-field { background: #f9fafb; color: #6b7280; cursor: default; }
+
+  /* Footer */
+  .modal-footer { display: flex; gap: 12px; padding-top: 20px; border-top: 1px solid #e5e7eb; margin-top: 8px; }
+  .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: background .15s; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary { background: #f3f4f6; color: #374151; }
+  .btn-secondary:hover { background: #e5e7eb; }
+
+  /* Toast */
+  .toast { display: none; position: fixed; bottom: 24px; right: 24px; background: #111827; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,.3); z-index: 999; animation: fadeIn .2s; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="modal">
+  <div class="modal-header">
+    <h2>新規機器登録</h2>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('basic', this)">基本情報</button>
+    <button class="tab" onclick="switchTab('inspection', this)">点検・バッテリー</button>
+    <button class="tab" onclick="switchTab('disposal', this)">廃棄・その他</button>
+  </div>
+
+  <form onsubmit="handleSubmit(event)">
+
+    <!-- ========== 基本情報 ========== -->
+    <div id="panel-basic" class="tab-panel active space-y">
+      <div class="grid-2">
+        <div>
+          <label>SN（シリアル番号）</label>
+          <input type="text" id="serialNumber" placeholder="例: 20120605846LF">
+        </div>
+        <div>
+          <label>機器コード <span style="color:#ef4444">*</span></label>
+          <input type="text" id="deviceCode" required placeholder="例: DEV-001">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>名称 <span style="color:#ef4444">*</span></label>
+          <input type="text" id="name" required placeholder="例: HEM-6200">
+        </div>
+        <div>
+          <label>分類（カテゴリ）<span style="color:#ef4444">*</span></label>
+          <input type="text" id="category" required placeholder="例: 血圧計、輸液ポンプ">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>REF</label>
+          <input type="text" id="ref" placeholder="例: HEM-6200">
+        </div>
+        <div>
+          <label>メーカー <span style="color:#ef4444">*</span></label>
+          <input type="text" id="manufacturer" required placeholder="例: オムロン">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>代理店</label>
+          <input type="text" id="dealer" placeholder="例: 八神">
+        </div>
+        <div>
+          <label>モデル <span style="color:#ef4444">*</span></label>
+          <input type="text" id="model" required placeholder="例: HEM-6200">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>配備部署</label>
+          <input type="text" id="department" placeholder="例: リハビリ">
+        </div>
+        <div>
+          <label>所在地 <span style="color:#ef4444">*</span></label>
+          <input type="text" id="location" required placeholder="例: 第3リハ">
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div>
+          <label>購入日</label>
+          <input type="date" id="purchaseDate" onchange="calcDerived()">
+        </div>
+        <div>
+          <label>耐用年数（年）</label>
+          <input type="number" id="usefulLifeYears" min="0" placeholder="例: 6" onchange="calcDerived()">
+        </div>
+        <div>
+          <label>価格（円）</label>
+          <input type="number" id="price" min="0" placeholder="例: 12000">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>更新目安（自動計算）</label>
+          <input type="text" id="renewalEstimate" class="readonly-field" readonly placeholder="-">
+        </div>
+        <div>
+          <label>耐用年数経過（自動計算）</label>
+          <input type="text" id="elapsedYears" class="readonly-field" readonly placeholder="-">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>販売終了日</label>
+          <input type="date" id="endOfSaleDate">
+        </div>
+        <div>
+          <label>サービスエンド日</label>
+          <input type="date" id="endOfServiceDate">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>ステータス</label>
+          <select id="status">
+            <option value="ACTIVE">稼働中</option>
+            <option value="MAINTENANCE">保守中</option>
+            <option value="REPAIR">修理中</option>
+            <option value="RETIRED">廃棄</option>
+          </select>
+        </div>
+        <div>
+          <label>保証期限</label>
+          <input type="date" id="warrantyExpiry">
+        </div>
+      </div>
+
+      <div>
+        <label>備考</label>
+        <textarea id="notes" rows="3" placeholder="自由記述"></textarea>
+      </div>
+    </div>
+
+    <!-- ========== 点検・バッテリー ========== -->
+    <div id="panel-inspection" class="tab-panel space-y">
+      <div class="grid-2">
+        <div>
+          <label>点検間隔（ヶ月）</label>
+          <input type="number" id="inspectionIntervalMonths" min="0" placeholder="例: 12">
+        </div>
+      </div>
+
+      <div>
+        <label>点検備考</label>
+        <textarea id="inspectionNotes" rows="3" placeholder="点検に関する特記事項"></textarea>
+      </div>
+
+      <div class="section-divider">
+        <p class="section-title">バッテリー管理</p>
+        <div class="grid-2">
+          <div>
+            <label>バッテリー交換周期（年）</label>
+            <input type="number" id="batteryIntervalYears" min="0" placeholder="例: 2" onchange="calcBattery()">
+          </div>
+          <div>
+            <label>バッテリー交換実施日</label>
+            <input type="date" id="lastBatteryDate" onchange="calcBattery()">
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label>バッテリー次回交換日（自動計算）</label>
+          <input type="text" id="nextBatteryDate" class="readonly-field" readonly placeholder="-">
+        </div>
+      </div>
+
+      <div class="section-divider">
+        <p class="section-title">消耗品管理</p>
+        <div class="grid-2">
+          <div>
+            <label>消耗品名称</label>
+            <input type="text" id="consumableName" placeholder="例: カフ">
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:12px">
+          <div>
+            <label>消耗品交換実施日</label>
+            <input type="date" id="lastConsumableDate">
+          </div>
+          <div>
+            <label>消耗品（予備）交換実施日</label>
+            <input type="date" id="lastConsumableSpareDate">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 廃棄・その他 ========== -->
+    <div id="panel-disposal" class="tab-panel space-y">
+      <div class="grid-2">
+        <div>
+          <label>廃棄/未稼働</label>
+          <select id="disposalStatus" onchange="toggleDisposalDates()">
+            <option value="">-</option>
+            <option value="DISPOSED">廃棄</option>
+            <option value="INACTIVE">未稼働</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-2" id="disposalDates" style="display:none">
+        <div>
+          <label>廃棄日</label>
+          <input type="date" id="disposalDate">
+        </div>
+        <div>
+          <label>未稼働日</label>
+          <input type="date" id="inactiveDate">
+        </div>
+      </div>
+
+      <div class="section-divider">
+        <p class="section-title">清潔野機器</p>
+        <div class="checkbox-row">
+          <input type="checkbox" id="isCleanField" onchange="toggleCleanFieldCategory()">
+          <label for="isCleanField">清潔野機器</label>
+        </div>
+        <div id="cleanFieldCategoryRow" style="margin-top:12px; display:none">
+          <label>清潔野機器分類</label>
+          <input type="text" id="cleanFieldCategory" placeholder="例: クラスII">
+        </div>
+      </div>
+
+      <div class="section-divider">
+        <label>写真URL</label>
+        <input type="url" id="photoUrl" placeholder="https://..." oninput="previewPhoto()">
+        <img id="photoPreview" class="photo-preview" alt="機器写真">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-primary">保存</button>
+      <button type="button" class="btn btn-secondary" onclick="resetForm()">リセット</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast">✅ 保存しました（デモ）</div>
+
+<script>
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  function calcDerived() {
+    const purchase = document.getElementById('purchaseDate').value;
+    const years = parseInt(document.getElementById('usefulLifeYears').value);
+
+    if (purchase && years) {
+      const purchaseDate = new Date(purchase);
+      const renewal = new Date(purchaseDate);
+      renewal.setFullYear(renewal.getFullYear() + years);
+      document.getElementById('renewalEstimate').value = renewal.toLocaleDateString('ja-JP');
+
+      const now = new Date();
+      const diffMs = now - purchaseDate;
+      const diffYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+      document.getElementById('elapsedYears').value = diffYears.toFixed(1) + ' 年';
+    } else {
+      document.getElementById('renewalEstimate').value = '';
+      document.getElementById('elapsedYears').value = '';
+    }
+  }
+
+  function calcBattery() {
+    const lastDate = document.getElementById('lastBatteryDate').value;
+    const interval = parseInt(document.getElementById('batteryIntervalYears').value);
+
+    if (lastDate && interval) {
+      const d = new Date(lastDate);
+      d.setFullYear(d.getFullYear() + interval);
+      document.getElementById('nextBatteryDate').value = d.toLocaleDateString('ja-JP');
+    } else {
+      document.getElementById('nextBatteryDate').value = '';
+    }
+  }
+
+  function toggleDisposalDates() {
+    const val = document.getElementById('disposalStatus').value;
+    document.getElementById('disposalDates').style.display = val ? 'grid' : 'none';
+  }
+
+  function toggleCleanFieldCategory() {
+    const checked = document.getElementById('isCleanField').checked;
+    document.getElementById('cleanFieldCategoryRow').style.display = checked ? 'block' : 'none';
+  }
+
+  function previewPhoto() {
+    const url = document.getElementById('photoUrl').value;
+    const img = document.getElementById('photoPreview');
+    if (url) {
+      img.src = url;
+      img.style.display = 'block';
+      img.onerror = () => { img.style.display = 'none'; };
+    } else {
+      img.style.display = 'none';
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const data = {
+      deviceCode: document.getElementById('deviceCode').value,
+      name: document.getElementById('name').value,
+      category: document.getElementById('category').value,
+      manufacturer: document.getElementById('manufacturer').value,
+      model: document.getElementById('model').value,
+      ref: document.getElementById('ref').value,
+      dealer: document.getElementById('dealer').value,
+      department: document.getElementById('department').value,
+      serialNumber: document.getElementById('serialNumber').value,
+      location: document.getElementById('location').value,
+      purchaseDate: document.getElementById('purchaseDate').value,
+      usefulLifeYears: document.getElementById('usefulLifeYears').value,
+      price: document.getElementById('price').value,
+      endOfSaleDate: document.getElementById('endOfSaleDate').value,
+      endOfServiceDate: document.getElementById('endOfServiceDate').value,
+      warrantyExpiry: document.getElementById('warrantyExpiry').value,
+      status: document.getElementById('status').value,
+      inspectionIntervalMonths: document.getElementById('inspectionIntervalMonths').value,
+      inspectionNotes: document.getElementById('inspectionNotes').value,
+      batteryReplacementIntervalYears: document.getElementById('batteryIntervalYears').value,
+      lastBatteryReplacementDate: document.getElementById('lastBatteryDate').value,
+      consumableName: document.getElementById('consumableName').value,
+      lastConsumableReplacementDate: document.getElementById('lastConsumableDate').value,
+      lastConsumableSpareReplacementDate: document.getElementById('lastConsumableSpareDate').value,
+      disposalStatus: document.getElementById('disposalStatus').value,
+      disposalDate: document.getElementById('disposalDate').value,
+      inactiveDate: document.getElementById('inactiveDate').value,
+      isCleanField: document.getElementById('isCleanField').checked,
+      cleanFieldCategory: document.getElementById('cleanFieldCategory').value,
+      photoUrl: document.getElementById('photoUrl').value,
+      notes: document.getElementById('notes').value,
+    };
+    console.log('送信データ:', data);
+    showToast();
+  }
+
+  function resetForm() {
+    document.querySelector('form').reset();
+    document.getElementById('renewalEstimate').value = '';
+    document.getElementById('elapsedYears').value = '';
+    document.getElementById('nextBatteryDate').value = '';
+    document.getElementById('disposalDates').style.display = 'none';
+    document.getElementById('cleanFieldCategoryRow').style.display = 'none';
+    document.getElementById('photoPreview').style.display = 'none';
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 2500);
+  }
+
+  // デモ用サンプルデータ
+  window.onload = () => {
+    document.getElementById('serialNumber').value = '20120605846LF';
+    document.getElementById('deviceCode').value = 'DEV-001';
+    document.getElementById('name').value = 'HEM-6200';
+    document.getElementById('category').value = '血圧計';
+    document.getElementById('ref').value = 'HEM-6200';
+    document.getElementById('manufacturer').value = 'オムロン';
+    document.getElementById('dealer').value = '八神';
+    document.getElementById('model').value = 'HEM-6200';
+    document.getElementById('department').value = 'リハビリ';
+    document.getElementById('location').value = '第3リハ';
+    document.getElementById('purchaseDate').value = '2020-06-05';
+    document.getElementById('usefulLifeYears').value = '6';
+    document.getElementById('inspectionIntervalMonths').value = '12';
+    calcDerived();
+  };
+</script>
+</body>
+</html>
