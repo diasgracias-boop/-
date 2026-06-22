@@ -31,18 +31,43 @@ model Device {
   category         String
   manufacturer     String
   model            String
+  ref              String?
+  dealer           String?
+  department       String?
   serialNumber     String?
   location         String
   purchaseDate     DateTime?
+  usefulLifeYears  Int?
+  price            Float?
+  endOfSaleDate    DateTime?
+  endOfServiceDate DateTime?
   warrantyExpiry   DateTime?
-  status           DeviceStatus @default(ACTIVE)
+  status           DeviceStatus  @default(ACTIVE)
+  disposalStatus   DisposalStatus?
+  disposalDate     DateTime?
+  inactiveDate     DateTime?
   notes            String?
+  inspectionNotes  String?
+  inspectionIntervalMonths Int?
+  batteryReplacementIntervalYears Int?
+  lastBatteryReplacementDate      DateTime?
+  consumableName   String?
+  lastConsumableReplacementDate       DateTime?
+  lastConsumableSpareReplacementDate  DateTime?
+  isCleanField     Boolean      @default(false)
+  cleanFieldCategory String?
+  photoUrl         String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
   maintenanceLogs     MaintenanceLog[]
   repairLogs          RepairLog[]
   inspectionSchedules InspectionSchedule[]
+}
+
+enum DisposalStatus {
+  DISPOSED
+  INACTIVE
 }
 
 enum DeviceStatus {
