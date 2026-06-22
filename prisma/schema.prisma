@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  maintenanceLogs MaintenanceLog[]
+  repairLogs      RepairLog[]
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model Device {
+  id               String       @id @default(cuid())
+  deviceCode       String       @unique
+  name             String
+  category         String
+  manufacturer     String
+  model            String
+  serialNumber     String?
+  location         String
+  purchaseDate     DateTime?
+  warrantyExpiry   DateTime?
+  status           DeviceStatus @default(ACTIVE)
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  maintenanceLogs     MaintenanceLog[]
+  repairLogs          RepairLog[]
+  inspectionSchedules InspectionSchedule[]
+}
+
+enum DeviceStatus {
+  ACTIVE
+  MAINTENANCE
+  REPAIR
+  RETIRED
+}
+
+model InspectionSchedule {
+  id           String    @id @default(cuid())
+  deviceId     String
+  device       Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  scheduledAt  DateTime
+  intervalDays Int
+  description  String
+  completed    Boolean   @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model MaintenanceLog {
+  id           String          @id @default(cuid())
+  deviceId     String
+  device       Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  performedBy  String
+  userId       String?
+  user         User?           @relation(fields: [userId], references: [id])
+  performedAt  DateTime
+  type         MaintenanceType
+  description  String
+  result       String?
+  nextSchedule DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+enum MaintenanceType {
+  INSPECTION
+  CALIBRATION
+  CLEANING
+  PREVENTIVE
+  OTHER
+}
+
+model RepairLog {
+  id         String       @id @default(cuid())
+  deviceId   String
+  device     Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  reportedBy String
+  userId     String?
+  user       User?        @relation(fields: [userId], references: [id])
+  reportedAt DateTime
+  symptom    String
+  cause      String?
+  action     String?
+  resolvedAt DateTime?
+  status     RepairStatus @default(OPEN)
+  cost       Float?
+  vendor     String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+enum RepairStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
