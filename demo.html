@@ -375,13 +375,11 @@
         </div>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="font-semibold text-gray-900">添付文書 更新チェック</h2>
-            <p id="pmda-last-checked" class="text-xs text-gray-500 mt-0.5">PMDAに登録された添付文書に更新がないか確認します</p>
-          </div>
-          <button id="pmda-check-btn" onclick="demoPmdaCheck()" class="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">今すぐ確認</button>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-semibold text-gray-900">添付文書 更新チェック</h2>
+          <button id="pmda-check-btn" onclick="demoPmdaCheck()" class="text-sm bg-purple-600 text-white px-4 py-1.5 rounded-lg hover:bg-purple-700 disabled:bg-purple-400 transition-colors">今すぐ確認</button>
         </div>
+        <p id="pmda-last-checked" class="text-xs text-gray-500 mb-4">PMDAに登録された添付文書に更新がないか確認します</p>
         <div id="pmda-check-result" class="hidden mb-4 bg-purple-50 border border-purple-200 text-purple-800 text-sm rounded-lg px-4 py-2"></div>
         <ul id="pmda-updates-list" class="space-y-2"></ul>
       </div>

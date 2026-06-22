@@ -215,21 +215,24 @@ export default function DashboardPage() {
         </div>
 
         <div id="pmda-updates" className="bg-white rounded-xl border border-gray-200 p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="font-semibold text-gray-900">添付文書 更新チェック</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {checking ? "確認中..." : lastCheckedAt ? `最終確認: ${lastCheckedAt.toLocaleString("ja-JP")}（24時間ごとに自動確認）` : "PMDAに登録された添付文書に更新がないか確認します"}
-              </p>
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-900">添付文書 更新チェック</h2>
             <button
               onClick={handleCheckPmda}
               disabled={checking}
-              className="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 text-sm bg-purple-600 text-white px-4 py-1.5 rounded-lg hover:bg-purple-700 disabled:bg-purple-400 transition-colors"
             >
+              {checking && (
+                <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              )}
               {checking ? "確認中..." : "今すぐ確認"}
             </button>
           </div>
+          <p className="text-xs text-gray-500 mb-4">
+            {lastCheckedAt
+              ? `最終確認: ${lastCheckedAt.toLocaleString("ja-JP")}（24時間ごとに自動確認）`
+              : "PMDAに登録された添付文書に更新がないか確認します"}
+          </p>
           {checkResult && (
             <div className="mb-4 bg-purple-50 border border-purple-200 text-purple-800 text-sm rounded-lg px-4 py-2">
               {checkResult.checkedCount}件を確認しました。{checkResult.updatedCount > 0 ? `${checkResult.updatedCount}件に更新があります。` : "更新はありません。"}
