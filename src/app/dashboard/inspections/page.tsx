@@ -3,6 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import InspectionModal from "@/components/InspectionModal";
+import InspectionCompleteModal from "@/components/InspectionCompleteModal";
+
+interface InspectionItem {
+  id: string;
+  name: string;
+  lowerLimit: number | null;
+  upperLimit: number | null;
+}
 
 interface Schedule {
   id: string;
@@ -11,6 +19,7 @@ interface Schedule {
   description: string;
   completed: boolean;
   device: { name: string; deviceCode: string; location: string };
+  items: InspectionItem[];
 }
 
 function formatDate(d: string) {
@@ -18,8 +27,7 @@ function formatDate(d: string) {
 }
 
 function daysUntil(d: string) {
-  const diff = Math.ceil((new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  return diff;
+  return Math.ceil((new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
 export default function InspectionsPage() {
@@ -28,6 +36,7 @@ export default function InspectionsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(searchParams.get("overdue") === "true" ? "overdue" : "upcoming");
   const [showModal, setShowModal] = useState(false);
+  const [completeTarget, setCompleteTarget] = useState<Schedule | null>(null);
 
   const fetchSchedules = useCallback(async () => {
     setLoading(true);
@@ -42,10 +51,8 @@ export default function InspectionsPage() {
 
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
-  async function handleComplete(id: string) {
-    if (!confirm("この点検を完了済みにしますか？次回スケジュールが自動生成されます。")) return;
-    await fetch(`/api/inspections/${id}/complete`, { method: "POST" });
-    fetchSchedules();
+  function handleCompleteClick(schedule: Schedule) {
+    setCompleteTarget(schedule);
   }
 
   return (
@@ -92,6 +99,7 @@ export default function InspectionsPage() {
                 <th className="px-4 py-3">機器名</th>
                 <th className="px-4 py-3">設置場所</th>
                 <th className="px-4 py-3">点検内容</th>
+                <th className="px-4 py-3">点検項目数</th>
                 <th className="px-4 py-3">予定日</th>
                 <th className="px-4 py-3">残り日数</th>
                 <th className="px-4 py-3">周期（日）</th>
@@ -111,6 +119,15 @@ export default function InspectionsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">{s.device.location}</td>
                     <td className="px-4 py-3 text-gray-600">{s.description}</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {s.items.length > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                          {s.items.length}項目
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-600">{formatDate(s.scheduledAt)}</td>
                     <td className="px-4 py-3">
                       <span
@@ -128,7 +145,7 @@ export default function InspectionsPage() {
                     <td className="px-4 py-3 text-gray-600">{s.intervalDays}日</td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() => handleComplete(s.id)}
+                        onClick={() => handleCompleteClick(s)}
                         className="text-xs bg-green-600 text-white px-3 py-1 rounded-full hover:bg-green-700 transition-colors"
                       >
                         完了
@@ -146,6 +163,16 @@ export default function InspectionsPage() {
         <InspectionModal
           onClose={() => setShowModal(false)}
           onSaved={fetchSchedules}
+        />
+      )}
+
+      {completeTarget && (
+        <InspectionCompleteModal
+          scheduleId={completeTarget.id}
+          description={completeTarget.description}
+          items={completeTarget.items}
+          onClose={() => setCompleteTarget(null)}
+          onCompleted={fetchSchedules}
         />
       )}
     </div>

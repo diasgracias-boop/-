@@ -8,12 +8,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  const measurements: { id: string; measuredValue?: number; judgment?: string }[] = body.measurements ?? [];
+
+  // Update item measurements
+  if (measurements.length > 0) {
+    await Promise.all(
+      measurements.map((m) =>
+        prisma.inspectionItem.update({
+          where: { id: m.id },
+          data: {
+            measuredValue: m.measuredValue ?? null,
+            judgment: m.judgment ?? null,
+          },
+        })
+      )
+    );
+  }
+
   const schedule = await prisma.inspectionSchedule.update({
     where: { id },
-    data: {
-      completed: true,
-      completedAt: new Date(),
-    },
+    data: { completed: true, completedAt: new Date() },
+    include: { items: true },
   });
 
   const nextDate = new Date(schedule.scheduledAt);
@@ -25,6 +41,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       scheduledAt: nextDate,
       intervalDays: schedule.intervalDays,
       description: schedule.description,
+      items: schedule.items.length
+        ? {
+            create: schedule.items.map((item) => ({
+              name: item.name,
+              lowerLimit: item.lowerLimit,
+              upperLimit: item.upperLimit,
+            })),
+          }
+        : undefined,
     },
   });
 

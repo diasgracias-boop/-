@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     },
     include: {
       device: { select: { name: true, deviceCode: true, location: true } },
+      items: { orderBy: { createdAt: "asc" } },
     },
     orderBy: { scheduledAt: "asc" },
   });
@@ -45,9 +46,19 @@ export async function POST(req: NextRequest) {
       scheduledAt: new Date(body.scheduledAt),
       intervalDays: body.intervalDays,
       description: body.description,
+      items: body.items?.length
+        ? {
+            create: body.items.map((item: { name: string; lowerLimit?: number; upperLimit?: number }) => ({
+              name: item.name,
+              lowerLimit: item.lowerLimit ?? null,
+              upperLimit: item.upperLimit ?? null,
+            })),
+          }
+        : undefined,
     },
     include: {
       device: { select: { name: true, deviceCode: true } },
+      items: true,
     },
   });
 

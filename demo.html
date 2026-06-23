@@ -443,7 +443,7 @@
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr class="text-left text-xs text-gray-500">
               <th class="px-4 py-3">機器名</th><th class="px-4 py-3">設置場所</th><th class="px-4 py-3">点検内容</th>
-              <th class="px-4 py-3">予定日</th><th class="px-4 py-3">残り日数</th><th class="px-4 py-3">周期</th><th class="px-4 py-3">操作</th>
+              <th class="px-4 py-3">点検項目数</th><th class="px-4 py-3">予定日</th><th class="px-4 py-3">残り日数</th><th class="px-4 py-3">周期</th><th class="px-4 py-3">操作</th>
             </tr>
           </thead>
           <tbody id="inspection-table-body"></tbody>
@@ -715,25 +715,55 @@
 
 <!-- 点検追加モーダル -->
 <div id="modal-inspection" class="hidden modal-overlay">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
     <div class="p-6 border-b border-gray-200"><h2 class="text-lg font-semibold text-gray-900">点検予定を追加</h2></div>
-    <div class="p-6 space-y-4">
+    <div class="p-6 space-y-5">
       <div><label class="block text-sm font-medium text-gray-700 mb-1">機器 *</label>
         <select id="fi-deviceId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">機器を選択...</option>
         </select></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">点検予定日 *</label>
-        <input id="fi-scheduledAt" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">点検周期 *</label>
-        <select id="fi-intervalDays" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="30">月次（30日）</option><option value="90">四半期（90日）</option>
-          <option value="180">半年（180日）</option><option value="365" selected>年次（365日）</option>
-        </select></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">点検予定日 *</label>
+          <input id="fi-scheduledAt" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">点検周期 *</label>
+          <select id="fi-intervalDays" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="30">月次（30日）</option><option value="90">四半期（90日）</option>
+            <option value="180">半年（180日）</option><option value="365" selected>年次（365日）</option>
+          </select></div>
+      </div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">点検内容 *</label>
         <input id="fi-description" placeholder="例: 定期点検・動作確認" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <!-- 点検項目 -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700">点検項目</label>
+          <button type="button" onclick="addInspectionItemRow()" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
+        </div>
+        <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-1">
+          <div class="col-span-5">点検項目</div><div class="col-span-3">下限</div><div class="col-span-3">上限</div><div class="col-span-1"></div>
+        </div>
+        <div id="fi-items-container" class="space-y-2"></div>
+      </div>
       <div class="flex gap-3 pt-2">
         <button onclick="saveInspection()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">保存</button>
         <button onclick="closeModal('modal-inspection')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 点検完了モーダル -->
+<div id="modal-inspection-complete" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-gray-200">
+      <h2 class="text-lg font-semibold text-gray-900">点検完了</h2>
+      <p id="ic-description" class="text-sm text-gray-500 mt-1"></p>
+    </div>
+    <div class="p-6">
+      <div id="ic-items-container" class="mb-6"></div>
+      <div class="flex gap-3">
+        <button onclick="saveInspectionComplete()" class="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-green-700">完了として保存</button>
+        <button onclick="closeModal('modal-inspection-complete')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
       </div>
     </div>
   </div>
@@ -838,9 +868,15 @@ let db = {
     { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true },
   ],
   inspections: [
-    { id: 'i1', deviceId: 'd1', scheduledAt: '2026-06-29', intervalDays: 365, description: '年次定期点検', completed: false },
-    { id: 'i2', deviceId: 'd2', scheduledAt: '2026-05-01', intervalDays: 180, description: '半年点検・キャリブレーション', completed: false },
-    { id: 'i3', deviceId: 'd4', scheduledAt: '2026-07-15', intervalDays: 90, description: '四半期点検', completed: false },
+    { id: 'i1', deviceId: 'd1', scheduledAt: '2026-06-29', intervalDays: 365, description: '年次定期点検', completed: false, items: [
+      { id: 'ii1', name: '絶縁抵抗', lowerLimit: null, upperLimit: 0.1, measuredValue: null, judgment: null },
+      { id: 'ii2', name: '接地抵抗（Ω）', lowerLimit: null, upperLimit: 0.1, measuredValue: null, judgment: null },
+      { id: 'ii3', name: '漏れ電流（μA）', lowerLimit: null, upperLimit: 100, measuredValue: null, judgment: null },
+    ]},
+    { id: 'i2', deviceId: 'd2', scheduledAt: '2026-05-01', intervalDays: 180, description: '半年点検・キャリブレーション', completed: false, items: [] },
+    { id: 'i3', deviceId: 'd4', scheduledAt: '2026-07-15', intervalDays: 90, description: '四半期点検', completed: false, items: [
+      { id: 'ii4', name: 'プローブ出力（mW）', lowerLimit: 10, upperLimit: 50, measuredValue: null, judgment: null },
+    ]},
   ],
   maintenanceLogs: [
     { id: 'm1', deviceId: 'd1', performedBy: '担当スタッフ', performedAt: '2026-04-10', type: 'INSPECTION', description: '年次定期点検実施', result: '異常なし。すべての機能が正常に動作することを確認。' },
@@ -1341,21 +1377,23 @@ function renderInspections() {
   if (currentInspectionFilter === 'overdue')  filtered = filtered.filter(i => new Date(i.scheduledAt) < now);
 
   document.getElementById('inspection-table-body').innerHTML = filtered.length === 0
-    ? '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">該当する点検予定がありません</td></tr>'
+    ? '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">該当する点検予定がありません</td></tr>'
     : filtered.map(s => {
         const d = getDevice(s.deviceId);
         const days = daysUntil(s.scheduledAt);
         const isOverdue = days < 0;
         const isUrgent = days >= 0 && days <= 7;
+        const itemCount = s.items ? s.items.length : 0;
         return `<tr class="hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}">
           <td class="px-4 py-3 font-medium text-gray-900"><div>${d?.name}</div><div class="text-xs text-gray-400 font-mono">${d?.deviceCode}</div></td>
           <td class="px-4 py-3 text-gray-600">${d?.location}</td>
           <td class="px-4 py-3 text-gray-600">${s.description}</td>
+          <td class="px-4 py-3 text-gray-600">${itemCount > 0 ? `<span class="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">${itemCount}項目</span>` : '<span class="text-gray-400">—</span>'}</td>
           <td class="px-4 py-3 text-gray-600">${fmtDate(s.scheduledAt)}</td>
           <td class="px-4 py-3"><span class="text-sm font-medium ${isOverdue ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-gray-600'}">${isOverdue ? Math.abs(days) + '日超過' : days + '日後'}</span></td>
           <td class="px-4 py-3 text-gray-600">${s.intervalDays}日</td>
           <td class="px-4 py-3">
-            <button onclick="completeInspection('${s.id}')" class="text-xs bg-green-600 text-white px-3 py-1 rounded-full hover:bg-green-700">完了</button>
+            <button onclick="openCompleteInspectionModal('${s.id}')" class="text-xs bg-green-600 text-white px-3 py-1 rounded-full hover:bg-green-700">完了</button>
           </td>
         </tr>`;
       }).join('');
@@ -1363,13 +1401,67 @@ function renderInspections() {
   populateDeviceSelects();
 }
 
-function completeInspection(id) {
-  if (!confirm('この点検を完了済みにしますか？次回スケジュールが自動生成されます。')) return;
+let completingInspectionId = null;
+
+function openCompleteInspectionModal(id) {
   const s = db.inspections.find(i => i.id === id);
+  completingInspectionId = id;
+  document.getElementById('ic-description').textContent = s.description;
+  const container = document.getElementById('ic-items-container');
+  if (!s.items || s.items.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-500">点検項目はありません。</p>';
+  } else {
+    container.innerHTML = `
+      <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-2">
+        <div class="col-span-4">点検項目</div><div class="col-span-2 text-center">下限</div><div class="col-span-2 text-center">上限</div><div class="col-span-2">測定値</div><div class="col-span-2">判定</div>
+      </div>
+      <div class="space-y-2">
+        ${s.items.map(item => `
+          <div class="grid grid-cols-12 gap-2 items-center">
+            <div class="col-span-4 text-sm text-gray-800">${item.name}</div>
+            <div class="col-span-2 text-sm text-center text-gray-500">${item.lowerLimit ?? '—'}</div>
+            <div class="col-span-2 text-sm text-center text-gray-500">${item.upperLimit ?? '—'}</div>
+            <div class="col-span-2"><input type="number" id="ic-val-${item.id}" step="any" placeholder="値" oninput="autoJudgeItem('${item.id}',${item.lowerLimit ?? 'null'},${item.upperLimit ?? 'null'})" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+            <div class="col-span-2">
+              <select id="ic-jdg-${item.id}" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">—</option><option value="OK">OK</option><option value="NG">NG</option>
+              </select>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+  document.getElementById('modal-inspection-complete').classList.remove('hidden');
+}
+
+function autoJudgeItem(itemId, lower, upper) {
+  const val = parseFloat(document.getElementById('ic-val-' + itemId).value);
+  const sel = document.getElementById('ic-jdg-' + itemId);
+  if (isNaN(val)) { sel.value = ''; return; }
+  let judgment = 'OK';
+  if (lower !== null && val < lower) judgment = 'NG';
+  if (upper !== null && val > upper) judgment = 'NG';
+  sel.value = judgment;
+  sel.className = `w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${judgment === 'OK' ? 'border-green-400 bg-green-50 text-green-700' : 'border-red-400 bg-red-50 text-red-700'}`;
+}
+
+function saveInspectionComplete() {
+  const s = db.inspections.find(i => i.id === completingInspectionId);
+  if (s.items) {
+    s.items.forEach(item => {
+      item.measuredValue = parseFloat(document.getElementById('ic-val-' + item.id)?.value) || null;
+      item.judgment = document.getElementById('ic-jdg-' + item.id)?.value || null;
+    });
+  }
   s.completed = true;
   const next = new Date(s.scheduledAt);
   next.setDate(next.getDate() + s.intervalDays);
-  db.inspections.push({ id: uid(), deviceId: s.deviceId, scheduledAt: next.toISOString().split('T')[0], intervalDays: s.intervalDays, description: s.description, completed: false });
+  db.inspections.push({
+    id: uid(), deviceId: s.deviceId, scheduledAt: next.toISOString().split('T')[0],
+    intervalDays: s.intervalDays, description: s.description, completed: false,
+    items: s.items ? s.items.map(item => ({ id: uid(), name: item.name, lowerLimit: item.lowerLimit, upperLimit: item.upperLimit, measuredValue: null, judgment: null })) : [],
+  });
+  closeModal('modal-inspection-complete');
   renderInspections();
 }
 
@@ -1378,7 +1470,28 @@ function openInspectionModal() {
   document.getElementById('fi-deviceId').value = '';
   document.getElementById('fi-scheduledAt').value = '';
   document.getElementById('fi-description').value = '';
+  document.getElementById('fi-items-container').innerHTML = '';
+  addInspectionItemRow();
   document.getElementById('modal-inspection').classList.remove('hidden');
+}
+
+function addInspectionItemRow() {
+  const container = document.getElementById('fi-items-container');
+  const rowId = uid();
+  const row = document.createElement('div');
+  row.className = 'grid grid-cols-12 gap-2 items-center';
+  row.id = 'fi-item-row-' + rowId;
+  row.innerHTML = `
+    <div class="col-span-5"><input type="text" placeholder="項目名" class="fi-item-name w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+    <div class="col-span-3"><input type="number" step="any" placeholder="下限" class="fi-item-lower w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+    <div class="col-span-3"><input type="number" step="any" placeholder="上限" class="fi-item-upper w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+    <div class="col-span-1 flex justify-center"><button type="button" onclick="removeInspectionItemRow('${rowId}')" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></div>
+  `;
+  container.appendChild(row);
+}
+
+function removeInspectionItemRow(rowId) {
+  document.getElementById('fi-item-row-' + rowId)?.remove();
 }
 
 function saveInspection() {
@@ -1387,7 +1500,15 @@ function saveInspection() {
   const intervalDays = parseInt(document.getElementById('fi-intervalDays').value);
   const description = document.getElementById('fi-description').value;
   if (!deviceId || !scheduledAt || !description) { alert('必須項目を入力してください'); return; }
-  db.inspections.push({ id: uid(), deviceId, scheduledAt, intervalDays, description, completed: false });
+  const items = [];
+  document.querySelectorAll('#fi-items-container .grid').forEach(row => {
+    const name = row.querySelector('.fi-item-name').value.trim();
+    if (!name) return;
+    const lower = row.querySelector('.fi-item-lower').value;
+    const upper = row.querySelector('.fi-item-upper').value;
+    items.push({ id: uid(), name, lowerLimit: lower !== '' ? parseFloat(lower) : null, upperLimit: upper !== '' ? parseFloat(upper) : null, measuredValue: null, judgment: null });
+  });
+  db.inspections.push({ id: uid(), deviceId, scheduledAt, intervalDays, description, completed: false, items });
   closeModal('modal-inspection');
   renderInspections();
 }

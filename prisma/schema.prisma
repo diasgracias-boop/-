@@ -95,6 +95,20 @@ model InspectionSchedule {
   completedAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  items        InspectionItem[]
+}
+
+model InspectionItem {
+  id             String             @id @default(cuid())
+  scheduleId     String
+  schedule       InspectionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  name           String
+  lowerLimit     Float?
+  upperLimit     Float?
+  measuredValue  Float?
+  judgment       String?
+  createdAt      DateTime           @default(now())
 }
 
 model MaintenanceLog {
