@@ -9,6 +9,15 @@ interface DocumentUploadProps {
   value: string;
   onChange: (url: string) => void;
   onPmdaClick: () => void;
+  deviceInfo?: { name?: string; model?: string; manufacturer?: string };
+}
+
+function buildFilename(deviceInfo: DocumentUploadProps["deviceInfo"], ext: string): string | null {
+  const parts = [deviceInfo?.name, deviceInfo?.model, deviceInfo?.manufacturer]
+    .map((s) => s?.trim().replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, "_"))
+    .filter(Boolean);
+  if (parts.length === 0) return null;
+  return `${parts.join("_")}.${ext}`;
 }
 
 export default function DocumentUpload({
@@ -17,6 +26,7 @@ export default function DocumentUpload({
   value,
   onChange,
   onPmdaClick,
+  deviceInfo,
 }: DocumentUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -28,8 +38,12 @@ export default function DocumentUpload({
     setUploading(true);
     setError("");
 
+    const ext = file.name.split(".").pop() ?? "pdf";
+    const renamedName = buildFilename(deviceInfo, ext);
+    const uploadFile = renamedName ? new File([file], renamedName, { type: file.type }) : file;
+
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", uploadFile);
 
     const res = await fetch("/api/upload", { method: "POST", body: form });
     const data = await res.json();

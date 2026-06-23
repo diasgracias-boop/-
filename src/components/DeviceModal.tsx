@@ -376,6 +376,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                       value={form[field]}
                       onChange={(url) => update(field, url)}
                       onPmdaClick={() => openPmda(field)}
+                      deviceInfo={{ name: form.name, model: form.model, manufacturer: form.manufacturer }}
                     />
                   ))}
                 </div>

@@ -29,8 +29,22 @@ export async function POST(req: NextRequest) {
   await mkdir(UPLOAD_DIR, { recursive: true });
 
   const ext = file.name.split(".").pop() ?? "bin";
-  const filename = `${randomUUID()}.${ext}`;
-  const filepath = join(UPLOAD_DIR, filename);
+  // ファイル名が名称_型式_メーカー形式で送られてきた場合はそのまま使い、重複時は連番を付ける
+  const baseName = file.name.replace(/\.[^.]+$/, "") || randomUUID();
+  let filename = `${baseName}.${ext}`;
+  let filepath = join(UPLOAD_DIR, filename);
+  // 同名ファイルが存在する場合は _2, _3... と連番を付ける
+  let counter = 2;
+  while (true) {
+    try {
+      await import("fs/promises").then((fs) => fs.access(filepath));
+      filename = `${baseName}_${counter}.${ext}`;
+      filepath = join(UPLOAD_DIR, filename);
+      counter++;
+    } catch {
+      break; // ファイルが存在しない = このファイル名で保存可能
+    }
+  }
 
   const bytes = await file.arrayBuffer();
   await writeFile(filepath, Buffer.from(bytes));
