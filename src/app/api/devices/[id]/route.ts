@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { syncAttachmentsToSameModel } from "@/lib/deviceAttachmentSync";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -37,6 +38,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
+  const attachmentUrl = body.attachmentUrl || null;
+  const catalogUrl = body.catalogUrl || null;
+  const manualUrl = body.manualUrl || null;
+  const pmdaApprovalNumber = body.pmdaApprovalNumber || null;
+  const pmdaDocUpdatedAt = body.pmdaDocUpdatedAt || null;
+
   const device = await prisma.device.update({
     where: { id },
     data: {
@@ -71,13 +78,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       isCleanField: body.isCleanField ?? false,
       cleanFieldCategory: body.cleanFieldCategory || null,
       photoUrl: body.photoUrl || null,
-      attachmentUrl: body.attachmentUrl || null,
-      catalogUrl: body.catalogUrl || null,
-      manualUrl: body.manualUrl || null,
-      pmdaApprovalNumber: body.pmdaApprovalNumber || null,
-      pmdaDocUpdatedAt: body.pmdaDocUpdatedAt || null,
-      ...(body.pmdaApprovalNumber ? { pmdaLastCheckedAt: new Date(), pmdaUpdateAvailable: false } : {}),
+      attachmentUrl,
+      catalogUrl,
+      manualUrl,
+      pmdaApprovalNumber,
+      pmdaDocUpdatedAt,
+      ...(pmdaApprovalNumber ? { pmdaLastCheckedAt: new Date(), pmdaUpdateAvailable: false } : {}),
     },
+  });
+
+  // 同型式+同メーカーの他の機器に添付URLを同期
+  await syncAttachmentsToSameModel(device.model, device.manufacturer, device.id, {
+    attachmentUrl,
+    catalogUrl,
+    manualUrl,
+    pmdaApprovalNumber,
+    pmdaDocUpdatedAt,
   });
 
   return NextResponse.json(device);

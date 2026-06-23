@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { findSharedAttachments } from "@/lib/deviceAttachmentSync";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -50,6 +51,24 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  // 同型式・同メーカーの既存機器から添付URLを継承（フォームで未入力の場合）
+  let attachmentUrl = body.attachmentUrl || null;
+  let catalogUrl = body.catalogUrl || null;
+  let manualUrl = body.manualUrl || null;
+  let pmdaApprovalNumber = body.pmdaApprovalNumber || null;
+  let pmdaDocUpdatedAt = body.pmdaDocUpdatedAt || null;
+
+  if (!attachmentUrl && !catalogUrl && !manualUrl) {
+    const peer = await findSharedAttachments(body.model, body.manufacturer);
+    if (peer) {
+      attachmentUrl = peer.attachmentUrl;
+      catalogUrl = peer.catalogUrl;
+      manualUrl = peer.manualUrl;
+      pmdaApprovalNumber = pmdaApprovalNumber || peer.pmdaApprovalNumber;
+      pmdaDocUpdatedAt = pmdaDocUpdatedAt || peer.pmdaDocUpdatedAt;
+    }
+  }
+
   const device = await prisma.device.create({
     data: {
       deviceCode: body.deviceCode,
@@ -83,12 +102,12 @@ export async function POST(req: NextRequest) {
       isCleanField: body.isCleanField ?? false,
       cleanFieldCategory: body.cleanFieldCategory || null,
       photoUrl: body.photoUrl || null,
-      attachmentUrl: body.attachmentUrl || null,
-      catalogUrl: body.catalogUrl || null,
-      manualUrl: body.manualUrl || null,
-      pmdaApprovalNumber: body.pmdaApprovalNumber || null,
-      pmdaDocUpdatedAt: body.pmdaDocUpdatedAt || null,
-      pmdaLastCheckedAt: body.pmdaApprovalNumber ? new Date() : null,
+      attachmentUrl,
+      catalogUrl,
+      manualUrl,
+      pmdaApprovalNumber,
+      pmdaDocUpdatedAt,
+      pmdaLastCheckedAt: pmdaApprovalNumber ? new Date() : null,
       pmdaUpdateAvailable: false,
     },
   });
