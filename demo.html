@@ -760,17 +760,45 @@
 
 <!-- 点検完了モーダル -->
 <div id="modal-inspection-complete" class="hidden modal-overlay">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-    <div class="p-6 border-b border-gray-200">
-      <h2 class="text-lg font-semibold text-gray-900">点検完了</h2>
-      <p id="ic-description" class="text-sm text-gray-500 mt-1"></p>
-    </div>
-    <div class="p-6">
-      <div id="ic-items-container" class="mb-6"></div>
-      <div class="flex gap-3">
-        <button onclick="saveInspectionComplete()" class="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-green-700">完了として保存</button>
-        <button onclick="closeModal('modal-inspection-complete')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col" style="max-height:90vh">
+    <div class="p-5 border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900">点検完了入力</h2>
+          <p id="ic-description" class="text-sm text-gray-500 mt-0.5"></p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <div id="ic-progress-text" class="text-xs text-gray-500 mb-1"></div>
+          <div class="w-40 bg-gray-200 rounded-full h-1.5">
+            <div id="ic-progress-bar" class="h-1.5 rounded-full transition-all bg-green-500" style="width:0%"></div>
+          </div>
+        </div>
       </div>
+    </div>
+    <div class="flex-1 overflow-y-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead class="sticky top-0 bg-gray-50 z-10">
+          <tr class="text-xs text-gray-500 font-medium border-b border-gray-200">
+            <th class="text-left px-3 py-2 w-6 text-gray-400">#</th>
+            <th class="text-left px-3 py-2">点検項目</th>
+            <th class="text-center px-2 py-2 w-16">下限</th>
+            <th class="text-center px-2 py-2 w-16">上限</th>
+            <th class="text-center px-2 py-2 w-24">測定値</th>
+            <th class="text-center px-2 py-2 w-20">
+              <div class="flex items-center justify-center gap-1">
+                <span>判定</span>
+                <button type="button" onclick="setAllInspectionOk()" class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium hover:bg-green-200 leading-none">全OK</button>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="ic-items-container"></tbody>
+      </table>
+      <div id="ic-empty-msg" class="hidden p-6 text-sm text-gray-500">点検項目はありません。</div>
+    </div>
+    <div class="flex gap-3 p-4 border-t border-gray-200 flex-shrink-0">
+      <button onclick="saveInspectionComplete()" id="ic-save-btn" class="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-green-700">完了として保存</button>
+      <button onclick="closeModal('modal-inspection-complete')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
     </div>
   </div>
 </div>
@@ -1472,46 +1500,97 @@ function renderInspections() {
 
 let completingInspectionId = null;
 
+function updateIcProgress() {
+  const s = db.inspections.find(i => i.id === completingInspectionId);
+  if (!s?.items?.length) return;
+  let filled = 0, ng = 0;
+  s.items.forEach(item => {
+    const jdg = document.getElementById('ic-jdg-' + item.id)?.value;
+    if (jdg) filled++;
+    if (jdg === 'NG') ng++;
+  });
+  const total = s.items.length;
+  const pct = Math.round(filled / total * 100);
+  const progressText = document.getElementById('ic-progress-text');
+  const progressBar = document.getElementById('ic-progress-bar');
+  const saveBtn = document.getElementById('ic-save-btn');
+  if (progressText) progressText.textContent = `${filled}/${total} 入力済み${ng > 0 ? `　NG ${ng}件` : ''}`;
+  if (progressBar) {
+    progressBar.style.width = pct + '%';
+    progressBar.className = `h-1.5 rounded-full transition-all ${ng > 0 ? 'bg-red-500' : 'bg-green-500'}`;
+  }
+  if (saveBtn) saveBtn.textContent = `完了として保存${ng > 0 ? `（NG ${ng}件あり）` : ''}`;
+}
+
 function openCompleteInspectionModal(id) {
   const s = db.inspections.find(i => i.id === id);
   completingInspectionId = id;
   document.getElementById('ic-description').textContent = s.description;
   const container = document.getElementById('ic-items-container');
+  const emptyMsg = document.getElementById('ic-empty-msg');
   if (!s.items || s.items.length === 0) {
-    container.innerHTML = '<p class="text-sm text-gray-500">点検項目はありません。</p>';
+    container.innerHTML = '';
+    emptyMsg.classList.remove('hidden');
   } else {
-    container.innerHTML = `
-      <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-2">
-        <div class="col-span-4">点検項目</div><div class="col-span-2 text-center">下限</div><div class="col-span-2 text-center">上限</div><div class="col-span-2">測定値</div><div class="col-span-2">判定</div>
-      </div>
-      <div class="space-y-2">
-        ${s.items.map(item => `
-          <div class="grid grid-cols-12 gap-2 items-center">
-            <div class="col-span-4 text-sm text-gray-800">${item.name}</div>
-            <div class="col-span-2 text-sm text-center text-gray-500">${item.lowerLimit ?? '—'}</div>
-            <div class="col-span-2 text-sm text-center text-gray-500">${item.upperLimit ?? '—'}</div>
-            <div class="col-span-2"><input type="number" id="ic-val-${item.id}" step="any" placeholder="値" oninput="autoJudgeItem('${item.id}',${item.lowerLimit ?? 'null'},${item.upperLimit ?? 'null'})" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-            <div class="col-span-2">
-              <select id="ic-jdg-${item.id}" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">—</option><option value="OK">OK</option><option value="NG">NG</option>
-              </select>
-            </div>
-          </div>
-        `).join('')}
-      </div>`;
+    emptyMsg.classList.add('hidden');
+    container.innerHTML = s.items.map((item, idx) => `
+      <tr id="ic-row-${item.id}" class="hover:bg-gray-50">
+        <td class="px-3 py-1.5 text-xs text-gray-400 text-center">${idx + 1}</td>
+        <td class="px-3 py-1.5 text-gray-800 font-medium">${item.name}</td>
+        <td class="px-2 py-1.5 text-center text-xs text-gray-500">${item.lowerLimit ?? '—'}</td>
+        <td class="px-2 py-1.5 text-center text-xs text-gray-500">${item.upperLimit ?? '—'}</td>
+        <td class="px-2 py-1.5"><input type="number" id="ic-val-${item.id}" step="any" placeholder="—"
+          oninput="autoJudgeItem('${item.id}',${item.lowerLimit ?? 'null'},${item.upperLimit ?? 'null'})"
+          class="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"></td>
+        <td class="px-2 py-1.5">
+          <select id="ic-jdg-${item.id}" onchange="applyJudgmentStyle('${item.id}');updateIcProgress()"
+            class="w-full border border-gray-300 text-gray-500 rounded px-1.5 py-1 text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">—</option><option value="OK">OK</option><option value="NG">NG</option>
+          </select>
+        </td>
+      </tr>
+    `).join('');
   }
+  // Reset progress
+  const progressBar = document.getElementById('ic-progress-bar');
+  if (progressBar) { progressBar.style.width = '0%'; }
+  const progressText = document.getElementById('ic-progress-text');
+  if (progressText) progressText.textContent = `0/${s.items?.length ?? 0} 入力済み`;
+  const saveBtn = document.getElementById('ic-save-btn');
+  if (saveBtn) saveBtn.textContent = '完了として保存';
   document.getElementById('modal-inspection-complete').classList.remove('hidden');
+}
+
+function applyJudgmentStyle(itemId) {
+  const sel = document.getElementById('ic-jdg-' + itemId);
+  const row = document.getElementById('ic-row-' + itemId);
+  const val = sel.value;
+  sel.className = `w-full border rounded px-1.5 py-1 text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    val === 'OK' ? 'border-green-400 bg-green-100 text-green-700' :
+    val === 'NG' ? 'border-red-400 bg-red-100 text-red-700' : 'border-gray-300 text-gray-500'}`;
+  if (row) row.className = val === 'NG' ? 'bg-red-50' : val === 'OK' ? 'bg-green-50/40' : 'hover:bg-gray-50';
 }
 
 function autoJudgeItem(itemId, lower, upper) {
   const val = parseFloat(document.getElementById('ic-val-' + itemId).value);
   const sel = document.getElementById('ic-jdg-' + itemId);
-  if (isNaN(val)) { sel.value = ''; return; }
+  if (isNaN(val)) { sel.value = ''; applyJudgmentStyle(itemId); updateIcProgress(); return; }
   let judgment = 'OK';
   if (lower !== null && val < lower) judgment = 'NG';
   if (upper !== null && val > upper) judgment = 'NG';
   sel.value = judgment;
-  sel.className = `w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${judgment === 'OK' ? 'border-green-400 bg-green-50 text-green-700' : 'border-red-400 bg-red-50 text-red-700'}`;
+  applyJudgmentStyle(itemId);
+  updateIcProgress();
+}
+
+function setAllInspectionOk() {
+  const s = db.inspections.find(i => i.id === completingInspectionId);
+  if (!s?.items) return;
+  s.items.forEach(item => {
+    const sel = document.getElementById('ic-jdg-' + item.id);
+    if (sel && !sel.value) { sel.value = 'OK'; applyJudgmentStyle(item.id); }
+  });
+  updateIcProgress();
 }
 
 function saveInspectionComplete() {
@@ -1525,10 +1604,11 @@ function saveInspectionComplete() {
   s.completed = true;
   const next = new Date(s.scheduledAt);
   next.setDate(next.getDate() + s.intervalDays);
+  const device = db.devices.find(d => d.id === s.deviceId);
   db.inspections.push({
     id: uid(), deviceId: s.deviceId, scheduledAt: next.toISOString().split('T')[0],
     intervalDays: s.intervalDays, description: s.description, completed: false,
-    items: s.items ? s.items.map(item => ({ id: uid(), name: item.name, lowerLimit: item.lowerLimit, upperLimit: item.upperLimit, measuredValue: null, judgment: null })) : [],
+    items: (device?.inspectionItems ?? []).map(item => ({ id: uid(), name: item.name, lowerLimit: item.lowerLimit, upperLimit: item.upperLimit, measuredValue: null, judgment: null })),
   });
   closeModal('modal-inspection-complete');
   renderInspections();
