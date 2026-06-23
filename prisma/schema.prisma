@@ -73,6 +73,25 @@ model Device {
   inspectionItems     DeviceInspectionItem[]
 }
 
+model InspectionTemplate {
+  id        String                   @id @default(cuid())
+  name      String
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+  items     InspectionTemplateItem[]
+}
+
+model InspectionTemplateItem {
+  id         String             @id @default(cuid())
+  templateId String
+  template   InspectionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name       String
+  lowerLimit Float?
+  upperLimit Float?
+  sortOrder  Int                @default(0)
+  createdAt  DateTime           @default(now())
+}
+
 model DeviceInspectionItem {
   id         String   @id @default(cuid())
   deviceId   String

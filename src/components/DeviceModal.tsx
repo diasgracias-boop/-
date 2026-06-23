@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
 import DocumentUpload from "./DocumentUpload";
+import InspectionTemplateModal from "./InspectionTemplateModal";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
 
 type DocField = "attachmentUrl" | "catalogUrl" | "manualUrl";
@@ -112,6 +113,8 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     pmdaApprovalNumber: device?.pmdaApprovalNumber ?? "",
     pmdaDocUpdatedAt: device?.pmdaDocUpdatedAt ?? "",
   });
+  const [templates, setTemplates] = useState<{ id: string; name: string; items: { name: string; lowerLimit: number | null; upperLimit: number | null }[] }[]>([]);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [inspectionItems, setInspectionItems] = useState<DeviceInspectionItem[]>(
     device?.inspectionItems?.map((i) => ({
       id: i.id,
@@ -123,6 +126,19 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [pmdaTarget, setPmdaTarget] = useState<DocField | null>(null);
+
+  async function loadTemplates() {
+    const res = await fetch("/api/inspection-templates");
+    setTemplates(await res.json());
+  }
+
+  useEffect(() => { loadTemplates(); }, []);
+
+  function applyTemplate(templateId: string) {
+    const t = templates.find((t) => t.id === templateId);
+    if (!t) return;
+    setInspectionItems(t.items.map((i) => ({ name: i.name, lowerLimit: i.lowerLimit?.toString() ?? "", upperLimit: i.upperLimit?.toString() ?? "" })));
+  }
 
   function applyPmdaResult(r: PmdaResult) {
     if (!pmdaTarget) return;
@@ -190,6 +206,13 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
             {device ? "機器情報を編集" : "新規機器登録"}
           </h2>
         </div>
+
+        {showTemplateModal && (
+          <InspectionTemplateModal
+            onClose={() => setShowTemplateModal(false)}
+            onUpdated={loadTemplates}
+          />
+        )}
 
         {pmdaTarget && (
           <PmdaSearchModal
@@ -349,8 +372,31 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
 
               {/* 点検項目テンプレート */}
               <div className="border-t border-gray-200 pt-4">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-700">定期点検項目</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplateModal(true)}
+                    className="text-xs text-gray-500 hover:text-blue-600 underline"
+                  >
+                    テンプレートを管理
+                  </button>
+                </div>
+                {/* テンプレート選択 */}
+                <div className="flex gap-2 mb-3">
+                  <select
+                    defaultValue=""
+                    onChange={(e) => { if (e.target.value) applyTemplate(e.target.value); e.target.value = ""; }}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+                  >
+                    <option value="">テンプレートから入力...</option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}（{t.items.length}項目）</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-500">項目を個別に編集できます</span>
                   <button
                     type="button"
                     onClick={() => setInspectionItems((prev) => [...prev, { name: "", lowerLimit: "", upperLimit: "" }])}
