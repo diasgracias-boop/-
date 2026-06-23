@@ -46,8 +46,20 @@ interface DeviceFormData {
   pmdaDocUpdatedAt: string;
 }
 
+interface DeviceInspectionItem {
+  id?: string;
+  name: string;
+  lowerLimit: string;
+  upperLimit: string;
+}
+
+interface DeviceWithItems extends Partial<DeviceFormData> {
+  id: string;
+  inspectionItems?: { id: string; name: string; lowerLimit: number | null; upperLimit: number | null }[];
+}
+
 interface DeviceModalProps {
-  device?: Partial<DeviceFormData> & { id: string } | null;
+  device?: DeviceWithItems | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -100,6 +112,14 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     pmdaApprovalNumber: device?.pmdaApprovalNumber ?? "",
     pmdaDocUpdatedAt: device?.pmdaDocUpdatedAt ?? "",
   });
+  const [inspectionItems, setInspectionItems] = useState<DeviceInspectionItem[]>(
+    device?.inspectionItems?.map((i) => ({
+      id: i.id,
+      name: i.name,
+      lowerLimit: i.lowerLimit?.toString() ?? "",
+      upperLimit: i.upperLimit?.toString() ?? "",
+    })) ?? []
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [pmdaTarget, setPmdaTarget] = useState<DocField | null>(null);
@@ -135,10 +155,18 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     const url = device ? `/api/devices/${device.id}` : "/api/devices";
     const method = device ? "PUT" : "POST";
 
+    const validItems = inspectionItems
+      .filter((item) => item.name.trim())
+      .map((item) => ({
+        name: item.name.trim(),
+        lowerLimit: item.lowerLimit !== "" ? parseFloat(item.lowerLimit) : null,
+        upperLimit: item.upperLimit !== "" ? parseFloat(item.upperLimit) : null,
+      }));
+
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, inspectionItems: validItems }),
     });
 
     if (!res.ok) {
@@ -317,6 +345,75 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
               <div>
                 <label className={labelCls}>点検備考</label>
                 <textarea value={form.inspectionNotes} onChange={(e) => update("inspectionNotes", e.target.value)} rows={3} className={inputCls} />
+              </div>
+
+              {/* 点検項目テンプレート */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">定期点検項目</h3>
+                  <button
+                    type="button"
+                    onClick={() => setInspectionItems((prev) => [...prev, { name: "", lowerLimit: "", upperLimit: "" }])}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    + 項目を追加
+                  </button>
+                </div>
+                {inspectionItems.length > 0 && (
+                  <div className="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-2">
+                    <div className="col-span-6">点検項目</div>
+                    <div className="col-span-3">下限</div>
+                    <div className="col-span-2">上限</div>
+                    <div className="col-span-1"></div>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  {inspectionItems.map((item, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-6">
+                        <input
+                          type="text"
+                          value={item.name}
+                          onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, name: e.target.value } : it))}
+                          placeholder="項目名"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <input
+                          type="number"
+                          value={item.lowerLimit}
+                          onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, lowerLimit: e.target.value } : it))}
+                          placeholder="下限"
+                          step="any"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <input
+                          type="number"
+                          value={item.upperLimit}
+                          onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, upperLimit: e.target.value } : it))}
+                          placeholder="上限"
+                          step="any"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setInspectionItems((prev) => prev.filter((_, i) => i !== index))}
+                          className="text-gray-400 hover:text-red-500 text-lg leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {inspectionItems.length === 0 && (
+                  <p className="text-xs text-gray-400">点検項目がありません。「+ 項目を追加」で追加してください。</p>
+                )}
               </div>
 
               <div className="border-t border-gray-200 pt-4">

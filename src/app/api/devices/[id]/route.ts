@@ -23,6 +23,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       inspectionSchedules: {
         orderBy: { scheduledAt: "asc" },
       },
+      inspectionItems: {
+        orderBy: { sortOrder: "asc" },
+      },
     },
   });
 
@@ -43,6 +46,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const manualUrl = body.manualUrl || null;
   const pmdaApprovalNumber = body.pmdaApprovalNumber || null;
   const pmdaDocUpdatedAt = body.pmdaDocUpdatedAt || null;
+
+  // Upsert inspection items
+  const incomingItems: { id?: string; name: string; lowerLimit?: number | null; upperLimit?: number | null; sortOrder?: number }[] = body.inspectionItems ?? [];
+  await prisma.deviceInspectionItem.deleteMany({ where: { deviceId: id } });
+  if (incomingItems.length > 0) {
+    await prisma.deviceInspectionItem.createMany({
+      data: incomingItems.map((item, idx) => ({
+        deviceId: id,
+        name: item.name,
+        lowerLimit: item.lowerLimit ?? null,
+        upperLimit: item.upperLimit ?? null,
+        sortOrder: idx,
+      })),
+    });
+  }
 
   const device = await prisma.device.update({
     where: { id },

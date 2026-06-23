@@ -40,18 +40,24 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  // Auto-populate items from device template
+  const deviceItems = await prisma.deviceInspectionItem.findMany({
+    where: { deviceId: body.deviceId },
+    orderBy: { sortOrder: "asc" },
+  });
+
   const schedule = await prisma.inspectionSchedule.create({
     data: {
       deviceId: body.deviceId,
       scheduledAt: new Date(body.scheduledAt),
       intervalDays: body.intervalDays,
       description: body.description,
-      items: body.items?.length
+      items: deviceItems.length > 0
         ? {
-            create: body.items.map((item: { name: string; lowerLimit?: number; upperLimit?: number }) => ({
+            create: deviceItems.map((item) => ({
               name: item.name,
-              lowerLimit: item.lowerLimit ?? null,
-              upperLimit: item.upperLimit ?? null,
+              lowerLimit: item.lowerLimit,
+              upperLimit: item.upperLimit,
             })),
           }
         : undefined,

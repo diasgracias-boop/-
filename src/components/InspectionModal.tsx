@@ -8,10 +8,11 @@ interface Device {
   deviceCode: string;
 }
 
-interface InspectionItem {
+interface DeviceInspectionItem {
+  id: string;
   name: string;
-  lowerLimit: string;
-  upperLimit: string;
+  lowerLimit: number | null;
+  upperLimit: number | null;
 }
 
 interface InspectionModalProps {
@@ -28,7 +29,7 @@ export default function InspectionModal({ deviceId, onClose, onSaved }: Inspecti
     intervalDays: "365",
     description: "",
   });
-  const [items, setItems] = useState<InspectionItem[]>([{ name: "", lowerLimit: "", upperLimit: "" }]);
+  const [previewItems, setPreviewItems] = useState<DeviceInspectionItem[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -37,37 +38,33 @@ export default function InspectionModal({ deviceId, onClose, onSaved }: Inspecti
     }
   }, [deviceId]);
 
-  function addItem() {
-    setItems((prev) => [...prev, { name: "", lowerLimit: "", upperLimit: "" }]);
-  }
+  // プレビュー: 機器選択時に点検項目を取得
+  useEffect(() => {
+    const id = form.deviceId;
+    if (!id) { setPreviewItems([]); return; }
+    fetch(`/api/devices/${id}`)
+      .then((r) => r.json())
+      .then((d) => setPreviewItems(d.inspectionItems ?? []));
+  }, [form.deviceId]);
 
-  function removeItem(index: number) {
-    setItems((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function updateItem(index: number, field: keyof InspectionItem, value: string) {
-    setItems((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
-  }
+  // deviceId が外部から渡された場合も初回ロード
+  useEffect(() => {
+    if (deviceId) {
+      fetch(`/api/devices/${deviceId}`)
+        .then((r) => r.json())
+        .then((d) => setPreviewItems(d.inspectionItems ?? []));
+    }
+  }, [deviceId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-
-    const validItems = items
-      .filter((item) => item.name.trim())
-      .map((item) => ({
-        name: item.name.trim(),
-        lowerLimit: item.lowerLimit !== "" ? parseFloat(item.lowerLimit) : undefined,
-        upperLimit: item.upperLimit !== "" ? parseFloat(item.upperLimit) : undefined,
-      }));
-
     await fetch("/api/inspections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
         intervalDays: parseInt(form.intervalDays),
-        items: validItems,
       }),
     });
     onSaved();
@@ -77,11 +74,11 @@ export default function InspectionModal({ deviceId, onClose, onSaved }: Inspecti
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg m-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">点検予定を追加</h2>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {!deviceId && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">機器 *</label>
@@ -100,6 +97,7 @@ export default function InspectionModal({ deviceId, onClose, onSaved }: Inspecti
               </select>
             </div>
           )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">点検予定日 *</label>
@@ -125,6 +123,7 @@ export default function InspectionModal({ deviceId, onClose, onSaved }: Inspecti
               </select>
             </div>
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">点検内容 *</label>
             <input
@@ -137,70 +136,29 @@ export default function InspectionModal({ deviceId, onClose, onSaved }: Inspecti
             />
           </div>
 
-          {/* 点検項目 */}
+          {/* 点検項目プレビュー */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">点検項目</label>
-              <button
-                type="button"
-                onClick={addItem}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-              >
-                + 項目を追加
-              </button>
-            </div>
-            <div className="space-y-2">
-              <div className="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1">
-                <div className="col-span-5">点検項目</div>
-                <div className="col-span-3">下限</div>
-                <div className="col-span-3">上限</div>
-                <div className="col-span-1"></div>
-              </div>
-              {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-5">
-                    <input
-                      type="text"
-                      value={item.name}
-                      onChange={(e) => updateItem(index, "name", e.target.value)}
-                      placeholder="項目名"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <input
-                      type="number"
-                      value={item.lowerLimit}
-                      onChange={(e) => updateItem(index, "lowerLimit", e.target.value)}
-                      placeholder="下限"
-                      step="any"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <input
-                      type="number"
-                      value={item.upperLimit}
-                      onChange={(e) => updateItem(index, "upperLimit", e.target.value)}
-                      placeholder="上限"
-                      step="any"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="col-span-1 flex justify-center">
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="text-gray-400 hover:text-red-500 text-lg leading-none"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">点検項目（機器情報より）</label>
+            {previewItems.length === 0 ? (
+              <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+                {form.deviceId ? "この機器には点検項目が登録されていません。機器情報フォームで設定してください。" : "機器を選択すると点検項目が表示されます。"}
+              </p>
+            ) : (
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-3 py-2 bg-gray-50 border-b border-gray-200">
+                  <div className="col-span-6">点検項目</div>
+                  <div className="col-span-3 text-center">下限</div>
+                  <div className="col-span-3 text-center">上限</div>
                 </div>
-              ))}
-            </div>
+                {previewItems.map((item) => (
+                  <div key={item.id} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-b border-gray-100 last:border-0">
+                    <div className="col-span-6 text-gray-800">{item.name}</div>
+                    <div className="col-span-3 text-center text-gray-500">{item.lowerLimit ?? "—"}</div>
+                    <div className="col-span-3 text-center text-gray-500">{item.upperLimit ?? "—"}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-2">

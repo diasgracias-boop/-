@@ -573,6 +573,18 @@
         </div>
         <div><label class="block text-sm font-medium text-gray-700 mb-1">点検備考</label>
           <textarea id="f-inspectionNotes" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></div>
+        <!-- 定期点検項目 -->
+        <div class="border-t border-gray-200 pt-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm font-semibold text-gray-700">定期点検項目</p>
+            <button type="button" onclick="addDeviceInspectionItemRow()" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
+          </div>
+          <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-1" id="device-items-header" style="display:none">
+            <div class="col-span-6">点検項目</div><div class="col-span-3">下限</div><div class="col-span-2">上限</div><div class="col-span-1"></div>
+          </div>
+          <div id="f-inspection-items" class="space-y-2"></div>
+          <p id="f-inspection-items-empty" class="text-xs text-gray-400">点検項目がありません。「+ 項目を追加」で追加してください。</p>
+        </div>
         <div class="border-t border-gray-200 pt-4">
           <p class="text-sm font-semibold text-gray-700 mb-3">バッテリー管理</p>
           <div class="grid grid-cols-2 gap-4">
@@ -715,11 +727,11 @@
 
 <!-- 点検追加モーダル -->
 <div id="modal-inspection" class="hidden modal-overlay">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
     <div class="p-6 border-b border-gray-200"><h2 class="text-lg font-semibold text-gray-900">点検予定を追加</h2></div>
-    <div class="p-6 space-y-5">
+    <div class="p-6 space-y-4">
       <div><label class="block text-sm font-medium text-gray-700 mb-1">機器 *</label>
-        <select id="fi-deviceId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select id="fi-deviceId" onchange="onInspectionDeviceChange()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">機器を選択...</option>
         </select></div>
       <div class="grid grid-cols-2 gap-4">
@@ -733,16 +745,10 @@
       </div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">点検内容 *</label>
         <input id="fi-description" placeholder="例: 定期点検・動作確認" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-      <!-- 点検項目 -->
+      <!-- 点検項目プレビュー -->
       <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700">点検項目</label>
-          <button type="button" onclick="addInspectionItemRow()" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
-        </div>
-        <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-1">
-          <div class="col-span-5">点検項目</div><div class="col-span-3">下限</div><div class="col-span-3">上限</div><div class="col-span-1"></div>
-        </div>
-        <div id="fi-items-container" class="space-y-2"></div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">点検項目（機器情報より）</label>
+        <div id="fi-items-preview"></div>
       </div>
       <div class="flex gap-3 pt-2">
         <button onclick="saveInspection()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">保存</button>
@@ -862,10 +868,16 @@
 // ==================== データ ====================
 let db = {
   devices: [
-    { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象', pmdaApprovalNumber: '20150BZX00234000', pmdaDocUpdatedAt: '2024-03-01', pmdaUpdateAvailable: false },
-    { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false },
-    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false },
-    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true },
+    { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象', pmdaApprovalNumber: '20150BZX00234000', pmdaDocUpdatedAt: '2024-03-01', pmdaUpdateAvailable: false, inspectionItems: [
+      { id: 'di1', name: '絶縁抵抗（MΩ）', lowerLimit: null, upperLimit: 0.1, sortOrder: 0 },
+      { id: 'di2', name: '接地抵抗（Ω）', lowerLimit: null, upperLimit: 0.1, sortOrder: 1 },
+      { id: 'di3', name: '漏れ電流（μA）', lowerLimit: null, upperLimit: 100, sortOrder: 2 },
+    ]},
+    { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, inspectionItems: [] },
+    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, inspectionItems: [] },
+    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true, inspectionItems: [
+      { id: 'di4', name: 'プローブ出力（mW）', lowerLimit: 10, upperLimit: 50, sortOrder: 0 },
+    ]},
   ],
   inspections: [
     { id: 'i1', deviceId: 'd1', scheduledAt: '2026-06-29', intervalDays: 365, description: '年次定期点検', completed: false, items: [
@@ -1305,7 +1317,53 @@ function openDeviceModal(id) {
   if (approvalEl) approvalEl.value = d ? (d.pmdaApprovalNumber || '') : '';
   if (updatedAtEl) updatedAtEl.value = d ? (d.pmdaDocUpdatedAt || '') : '';
 
+  // 定期点検項目をロード
+  renderDeviceInspectionItems(d?.inspectionItems ?? []);
+
   document.getElementById('modal-device').classList.remove('hidden');
+}
+
+function renderDeviceInspectionItems(items) {
+  const container = document.getElementById('f-inspection-items');
+  const emptyMsg = document.getElementById('f-inspection-items-empty');
+  const header = document.getElementById('device-items-header');
+  container.innerHTML = '';
+  if (items.length === 0) {
+    emptyMsg.style.display = '';
+    header.style.display = 'none';
+  } else {
+    emptyMsg.style.display = 'none';
+    header.style.display = '';
+    items.forEach((item, idx) => addDeviceInspectionItemRow(item));
+  }
+}
+
+function addDeviceInspectionItemRow(item) {
+  const container = document.getElementById('f-inspection-items');
+  const emptyMsg = document.getElementById('f-inspection-items-empty');
+  const header = document.getElementById('device-items-header');
+  emptyMsg.style.display = 'none';
+  header.style.display = '';
+  const rowId = uid();
+  const row = document.createElement('div');
+  row.className = 'grid grid-cols-12 gap-2 items-center device-inspection-item-row';
+  row.innerHTML = `
+    <div class="col-span-6"><input type="text" value="${item?.name ?? ''}" placeholder="項目名" class="di-item-name w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+    <div class="col-span-3"><input type="number" step="any" value="${item?.lowerLimit ?? ''}" placeholder="下限" class="di-item-lower w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+    <div class="col-span-2"><input type="number" step="any" value="${item?.upperLimit ?? ''}" placeholder="上限" class="di-item-upper w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+    <div class="col-span-1 flex justify-center"><button type="button" onclick="removeDeviceInspectionItemRow(this)" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></div>
+  `;
+  container.appendChild(row);
+}
+
+function removeDeviceInspectionItemRow(btn) {
+  const row = btn.closest('.device-inspection-item-row');
+  row.remove();
+  const remaining = document.querySelectorAll('.device-inspection-item-row');
+  if (remaining.length === 0) {
+    document.getElementById('f-inspection-items-empty').style.display = '';
+    document.getElementById('device-items-header').style.display = 'none';
+  }
 }
 
 function saveDevice() {
@@ -1338,6 +1396,17 @@ function saveDevice() {
     alert('必須項目を入力してください');
     return;
   }
+  // 定期点検項目を収集
+  const inspectionItems = [];
+  document.querySelectorAll('.device-inspection-item-row').forEach((row, idx) => {
+    const name = row.querySelector('.di-item-name').value.trim();
+    if (!name) return;
+    const lower = row.querySelector('.di-item-lower').value;
+    const upper = row.querySelector('.di-item-upper').value;
+    inspectionItems.push({ id: uid(), name, lowerLimit: lower !== '' ? parseFloat(lower) : null, upperLimit: upper !== '' ? parseFloat(upper) : null, sortOrder: idx });
+  });
+  vals.inspectionItems = inspectionItems;
+
   if (editingDeviceId) {
     const idx = db.devices.findIndex(d => d.id === editingDeviceId);
     db.devices[idx] = { ...db.devices[idx], ...vals };
@@ -1470,28 +1539,40 @@ function openInspectionModal() {
   document.getElementById('fi-deviceId').value = '';
   document.getElementById('fi-scheduledAt').value = '';
   document.getElementById('fi-description').value = '';
-  document.getElementById('fi-items-container').innerHTML = '';
-  addInspectionItemRow();
+  renderInspectionItemPreview('');
   document.getElementById('modal-inspection').classList.remove('hidden');
 }
 
-function addInspectionItemRow() {
-  const container = document.getElementById('fi-items-container');
-  const rowId = uid();
-  const row = document.createElement('div');
-  row.className = 'grid grid-cols-12 gap-2 items-center';
-  row.id = 'fi-item-row-' + rowId;
-  row.innerHTML = `
-    <div class="col-span-5"><input type="text" placeholder="項目名" class="fi-item-name w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-3"><input type="number" step="any" placeholder="下限" class="fi-item-lower w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-3"><input type="number" step="any" placeholder="上限" class="fi-item-upper w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-1 flex justify-center"><button type="button" onclick="removeInspectionItemRow('${rowId}')" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></div>
-  `;
-  container.appendChild(row);
+function onInspectionDeviceChange() {
+  const deviceId = document.getElementById('fi-deviceId').value;
+  renderInspectionItemPreview(deviceId);
 }
 
-function removeInspectionItemRow(rowId) {
-  document.getElementById('fi-item-row-' + rowId)?.remove();
+function renderInspectionItemPreview(deviceId) {
+  const container = document.getElementById('fi-items-preview');
+  if (!deviceId) {
+    container.innerHTML = '<p class="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">機器を選択すると点検項目が表示されます。</p>';
+    return;
+  }
+  const device = db.devices.find(d => d.id === deviceId);
+  const items = device?.inspectionItems ?? [];
+  if (items.length === 0) {
+    container.innerHTML = '<p class="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">この機器には点検項目が登録されていません。機器情報フォームで設定してください。</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="rounded-lg border border-gray-200 overflow-hidden">
+      <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-3 py-2 bg-gray-50 border-b border-gray-200">
+        <div class="col-span-6">点検項目</div><div class="col-span-3 text-center">下限</div><div class="col-span-3 text-center">上限</div>
+      </div>
+      ${items.map(item => `
+        <div class="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-b border-gray-100 last:border-0">
+          <div class="col-span-6 text-gray-800">${item.name}</div>
+          <div class="col-span-3 text-center text-gray-500">${item.lowerLimit ?? '—'}</div>
+          <div class="col-span-3 text-center text-gray-500">${item.upperLimit ?? '—'}</div>
+        </div>
+      `).join('')}
+    </div>`;
 }
 
 function saveInspection() {
@@ -1500,14 +1581,10 @@ function saveInspection() {
   const intervalDays = parseInt(document.getElementById('fi-intervalDays').value);
   const description = document.getElementById('fi-description').value;
   if (!deviceId || !scheduledAt || !description) { alert('必須項目を入力してください'); return; }
-  const items = [];
-  document.querySelectorAll('#fi-items-container .grid').forEach(row => {
-    const name = row.querySelector('.fi-item-name').value.trim();
-    if (!name) return;
-    const lower = row.querySelector('.fi-item-lower').value;
-    const upper = row.querySelector('.fi-item-upper').value;
-    items.push({ id: uid(), name, lowerLimit: lower !== '' ? parseFloat(lower) : null, upperLimit: upper !== '' ? parseFloat(upper) : null, measuredValue: null, judgment: null });
-  });
+  const device = db.devices.find(d => d.id === deviceId);
+  const items = (device?.inspectionItems ?? []).map(item => ({
+    id: uid(), name: item.name, lowerLimit: item.lowerLimit, upperLimit: item.upperLimit, measuredValue: null, judgment: null
+  }));
   db.inspections.push({ id: uid(), deviceId, scheduledAt, intervalDays, description, completed: false, items });
   closeModal('modal-inspection');
   renderInspections();

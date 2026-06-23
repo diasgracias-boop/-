@@ -70,6 +70,18 @@ model Device {
   maintenanceLogs     MaintenanceLog[]
   repairLogs          RepairLog[]
   inspectionSchedules InspectionSchedule[]
+  inspectionItems     DeviceInspectionItem[]
+}
+
+model DeviceInspectionItem {
+  id         String   @id @default(cuid())
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  name       String
+  lowerLimit Float?
+  upperLimit Float?
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
 }
 
 enum DisposalStatus {

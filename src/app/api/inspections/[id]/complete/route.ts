@@ -35,15 +35,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const nextDate = new Date(schedule.scheduledAt);
   nextDate.setDate(nextDate.getDate() + schedule.intervalDays);
 
+  // Fetch current device template items for next schedule
+  const deviceItems = await prisma.deviceInspectionItem.findMany({
+    where: { deviceId: schedule.deviceId },
+    orderBy: { sortOrder: "asc" },
+  });
+
   await prisma.inspectionSchedule.create({
     data: {
       deviceId: schedule.deviceId,
       scheduledAt: nextDate,
       intervalDays: schedule.intervalDays,
       description: schedule.description,
-      items: schedule.items.length
+      items: deviceItems.length > 0
         ? {
-            create: schedule.items.map((item) => ({
+            create: deviceItems.map((item) => ({
               name: item.name,
               lowerLimit: item.lowerLimit,
               upperLimit: item.upperLimit,
