@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const INSPECTION_CATEGORIES = ["外装・機能点検", "性能点検", "電気的安全性点検"] as const;
 
@@ -14,6 +14,7 @@ interface InspectionItem {
 
 interface Props {
   scheduleId: string;
+  deviceId: string;
   description: string;
   items: InspectionItem[];
   onClose: () => void;
@@ -34,12 +35,28 @@ function autoJudge(value: string, lower: number | null, upper: number | null): s
   return "OK";
 }
 
-export default function InspectionCompleteModal({ scheduleId, description, items, onClose, onCompleted }: Props) {
+export default function InspectionCompleteModal({ scheduleId, deviceId, description, items: initialItems, onClose, onCompleted }: Props) {
+  const [items, setItems] = useState<InspectionItem[]>(initialItems);
   const [measurements, setMeasurements] = useState<Measurement[]>(
-    items.map((item) => ({ id: item.id, measuredValue: "", judgment: "" }))
+    initialItems.map((item) => ({ id: item.id, measuredValue: "", judgment: "" }))
   );
   const [saving, setSaving] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // 項目が空の場合、機器テンプレートから自動ロード
+  useEffect(() => {
+    if (initialItems.length === 0) {
+      setLoadingItems(true);
+      fetch(`/api/inspections/${scheduleId}/populate-items`, { method: "POST" })
+        .then((r) => r.json())
+        .then((data: InspectionItem[]) => {
+          setItems(data);
+          setMeasurements(data.map((item) => ({ id: item.id, measuredValue: "", judgment: "" })));
+        })
+        .finally(() => setLoadingItems(false));
+    }
+  }, [scheduleId, initialItems.length]);
 
   const filledCount = measurements.filter((m) => m.judgment !== "").length;
   const ngCount = measurements.filter((m) => m.judgment === "NG").length;
@@ -121,8 +138,13 @@ export default function InspectionCompleteModal({ scheduleId, description, items
 
         {/* テーブル */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          {items.length === 0 ? (
-            <div className="p-6 text-sm text-gray-500">点検項目はありません。</div>
+          {loadingItems ? (
+            <div className="p-8 text-center text-gray-400 text-sm">点検項目を読み込み中...</div>
+          ) : items.length === 0 ? (
+            <div className="p-6 text-sm text-gray-500">
+              <p>点検項目が設定されていません。</p>
+              <p className="text-xs text-gray-400 mt-1">機器情報の「点検・バッテリー」タブから点検項目を登録してください。</p>
+            </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-sm border-collapse">
@@ -221,7 +243,7 @@ export default function InspectionCompleteModal({ scheduleId, description, items
           <div className="flex gap-3 p-4 border-t border-gray-200 flex-shrink-0">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || loadingItems}
               className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               {saving ? "保存中..." : `完了として保存${ngCount > 0 ? `（NG ${ngCount}件あり）` : ""}`}

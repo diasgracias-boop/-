@@ -8,12 +8,14 @@ import InspectionCompleteModal from "@/components/InspectionCompleteModal";
 interface InspectionItem {
   id: string;
   name: string;
+  category?: string;
   lowerLimit: number | null;
   upperLimit: number | null;
 }
 
 interface Schedule {
   id: string;
+  deviceId: string;
   scheduledAt: string;
   intervalDays: number;
   description: string;
@@ -169,6 +171,7 @@ export default function InspectionsPage() {
       {completeTarget && (
         <InspectionCompleteModal
           scheduleId={completeTarget.id}
+          deviceId={completeTarget.deviceId}
           description={completeTarget.description}
           items={completeTarget.items}
           onClose={() => setCompleteTarget(null)}
