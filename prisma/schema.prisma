@@ -86,6 +86,7 @@ model InspectionTemplateItem {
   templateId String
   template   InspectionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   name       String
+  category   String             @default("外装・機能点検")
   lowerLimit Float?
   upperLimit Float?
   sortOrder  Int                @default(0)
@@ -97,6 +98,7 @@ model DeviceInspectionItem {
   deviceId   String
   device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   name       String
+  category   String   @default("外装・機能点検")
   lowerLimit Float?
   upperLimit Float?
   sortOrder  Int      @default(0)
@@ -135,6 +137,7 @@ model InspectionItem {
   scheduleId     String
   schedule       InspectionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   name           String
+  category       String             @default("外装・機能点検")
   lowerLimit     Float?
   upperLimit     Float?
   measuredValue  Float?

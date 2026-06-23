@@ -585,22 +585,51 @@
               <option value="">テンプレートから入力...</option>
             </select>
           </div>
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-gray-500">項目を個別に編集できます</span>
-            <button type="button" onclick="addDeviceInspectionItemRow()" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
+          <div class="mb-2"><span class="text-xs text-gray-500">カテゴリごとに項目を個別に編集できます</span></div>
+          <div class="space-y-3">
+            <!-- 外装・機能点検 -->
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+              <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <span class="text-xs font-semibold text-gray-600">外装・機能点検</span>
+                <button type="button" onclick="addDeviceInspectionItemRow('外装・機能点検')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 追加</button>
+              </div>
+              <table class="w-full text-sm border-collapse" id="di-table-外装・機能点検" style="display:none">
+                <thead><tr class="text-xs text-gray-500 font-medium border-b border-gray-100">
+                  <th class="text-left px-3 py-1.5">点検項目</th><th class="text-center px-2 py-1.5 w-20">下限</th><th class="text-center px-2 py-1.5 w-20">上限</th><th class="w-6"></th>
+                </tr></thead>
+                <tbody id="di-tbody-外装・機能点検" class="divide-y divide-gray-50"></tbody>
+              </table>
+              <p id="di-empty-外装・機能点検" class="px-3 py-2 text-xs text-gray-400">項目なし</p>
+            </div>
+            <!-- 性能点検 -->
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+              <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <span class="text-xs font-semibold text-gray-600">性能点検</span>
+                <button type="button" onclick="addDeviceInspectionItemRow('性能点検')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 追加</button>
+              </div>
+              <table class="w-full text-sm border-collapse" id="di-table-性能点検" style="display:none">
+                <thead><tr class="text-xs text-gray-500 font-medium border-b border-gray-100">
+                  <th class="text-left px-3 py-1.5">点検項目</th><th class="text-center px-2 py-1.5 w-20">下限</th><th class="text-center px-2 py-1.5 w-20">上限</th><th class="w-6"></th>
+                </tr></thead>
+                <tbody id="di-tbody-性能点検" class="divide-y divide-gray-50"></tbody>
+              </table>
+              <p id="di-empty-性能点検" class="px-3 py-2 text-xs text-gray-400">項目なし</p>
+            </div>
+            <!-- 電気的安全性点検 -->
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+              <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <span class="text-xs font-semibold text-gray-600">電気的安全性点検</span>
+                <button type="button" onclick="addDeviceInspectionItemRow('電気的安全性点検')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 追加</button>
+              </div>
+              <table class="w-full text-sm border-collapse" id="di-table-電気的安全性点検" style="display:none">
+                <thead><tr class="text-xs text-gray-500 font-medium border-b border-gray-100">
+                  <th class="text-left px-3 py-1.5">点検項目</th><th class="text-center px-2 py-1.5 w-20">下限</th><th class="text-center px-2 py-1.5 w-20">上限</th><th class="w-6"></th>
+                </tr></thead>
+                <tbody id="di-tbody-電気的安全性点検" class="divide-y divide-gray-50"></tbody>
+              </table>
+              <p id="di-empty-電気的安全性点検" class="px-3 py-2 text-xs text-gray-400">項目なし</p>
+            </div>
           </div>
-          <table class="w-full text-sm border-collapse" id="device-items-table" style="display:none">
-            <thead>
-              <tr class="text-xs text-gray-500 font-medium border-b border-gray-200">
-                <th class="text-left pb-1.5">点検項目</th>
-                <th class="text-center pb-1.5 w-24">下限</th>
-                <th class="text-center pb-1.5 w-24">上限</th>
-                <th class="w-6"></th>
-              </tr>
-            </thead>
-            <tbody id="f-inspection-items"></tbody>
-          </table>
-          <p id="f-inspection-items-empty" class="text-xs text-gray-400">点検項目がありません。「+ 項目を追加」で追加してください。</p>
         </div>
         <div class="border-t border-gray-200 pt-4">
           <p class="text-sm font-semibold text-gray-700 mb-3">バッテリー管理</p>
@@ -800,15 +829,45 @@
         <input id="tpl-name" type="text" placeholder="例: 電気安全点検、年次定期点検"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700">点検項目</label>
-          <button type="button" onclick="tplAddItemRow()" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
+      <!-- カテゴリ別項目セクション -->
+      <div id="tpl-cat-外装・機能点検" class="border border-gray-200 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+          <span class="text-sm font-semibold text-gray-700">外装・機能点検</span>
+          <button type="button" onclick="tplAddItemRow('外装・機能点検')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
         </div>
-        <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-1" id="tpl-items-header" style="display:none">
-          <div class="col-span-6">点検項目</div><div class="col-span-3">下限</div><div class="col-span-2">上限</div><div class="col-span-1"></div>
+        <table class="w-full text-sm border-collapse" id="tpl-table-外装・機能点検" style="display:none">
+          <thead><tr class="text-xs text-gray-500 font-medium border-b border-gray-100">
+            <th class="text-left px-3 py-1.5">点検項目</th><th class="text-center px-2 py-1.5 w-24">下限</th><th class="text-center px-2 py-1.5 w-24">上限</th><th class="w-6"></th>
+          </tr></thead>
+          <tbody id="tpl-tbody-外装・機能点検" class="divide-y divide-gray-50"></tbody>
+        </table>
+        <p id="tpl-empty-外装・機能点検" class="px-4 py-3 text-xs text-gray-400">項目がありません。「+ 項目を追加」で追加してください。</p>
+      </div>
+      <div id="tpl-cat-性能点検" class="border border-gray-200 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+          <span class="text-sm font-semibold text-gray-700">性能点検</span>
+          <button type="button" onclick="tplAddItemRow('性能点検')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
         </div>
-        <div id="tpl-items-container" class="space-y-2"></div>
+        <table class="w-full text-sm border-collapse" id="tpl-table-性能点検" style="display:none">
+          <thead><tr class="text-xs text-gray-500 font-medium border-b border-gray-100">
+            <th class="text-left px-3 py-1.5">点検項目</th><th class="text-center px-2 py-1.5 w-24">下限</th><th class="text-center px-2 py-1.5 w-24">上限</th><th class="w-6"></th>
+          </tr></thead>
+          <tbody id="tpl-tbody-性能点検" class="divide-y divide-gray-50"></tbody>
+        </table>
+        <p id="tpl-empty-性能点検" class="px-4 py-3 text-xs text-gray-400">項目がありません。「+ 項目を追加」で追加してください。</p>
+      </div>
+      <div id="tpl-cat-電気的安全性点検" class="border border-gray-200 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+          <span class="text-sm font-semibold text-gray-700">電気的安全性点検</span>
+          <button type="button" onclick="tplAddItemRow('電気的安全性点検')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
+        </div>
+        <table class="w-full text-sm border-collapse" id="tpl-table-電気的安全性点検" style="display:none">
+          <thead><tr class="text-xs text-gray-500 font-medium border-b border-gray-100">
+            <th class="text-left px-3 py-1.5">点検項目</th><th class="text-center px-2 py-1.5 w-24">下限</th><th class="text-center px-2 py-1.5 w-24">上限</th><th class="w-6"></th>
+          </tr></thead>
+          <tbody id="tpl-tbody-電気的安全性点検" class="divide-y divide-gray-50"></tbody>
+        </table>
+        <p id="tpl-empty-電気的安全性点検" class="px-4 py-3 text-xs text-gray-400">項目がありません。「+ 項目を追加」で追加してください。</p>
       </div>
     </div>
     <!-- フッター -->
@@ -960,41 +1019,47 @@
 let db = {
   inspectionTemplates: [
     { id: 'tpl1', name: '電気安全点検', items: [
-      { id: 'ti1', name: '絶縁抵抗（MΩ）', lowerLimit: null, upperLimit: 0.1, sortOrder: 0 },
-      { id: 'ti2', name: '接地抵抗（Ω）', lowerLimit: null, upperLimit: 0.1, sortOrder: 1 },
-      { id: 'ti3', name: '漏れ電流（μA）', lowerLimit: null, upperLimit: 100, sortOrder: 2 },
+      { id: 'ti1', name: '外観・ケーブル損傷確認', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 0 },
+      { id: 'ti2', name: '電源ON/OFF動作', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 1 },
+      { id: 'ti3', name: '絶縁抵抗（MΩ）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, sortOrder: 2 },
+      { id: 'ti4', name: '接地抵抗（Ω）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, sortOrder: 3 },
+      { id: 'ti5', name: '漏れ電流（μA）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 100, sortOrder: 4 },
     ]},
     { id: 'tpl2', name: '超音波装置点検', items: [
-      { id: 'ti4', name: 'プローブ出力（mW）', lowerLimit: 10, upperLimit: 50, sortOrder: 0 },
-      { id: 'ti5', name: '周波数精度（%）', lowerLimit: -5, upperLimit: 5, sortOrder: 1 },
+      { id: 'ti6', name: '外観・プローブ確認', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 0 },
+      { id: 'ti7', name: 'プローブ出力（mW）', category: '性能点検', lowerLimit: 10, upperLimit: 50, sortOrder: 1 },
+      { id: 'ti8', name: '周波数精度（%）', category: '性能点検', lowerLimit: -5, upperLimit: 5, sortOrder: 2 },
+      { id: 'ti9', name: '漏れ電流（μA）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 100, sortOrder: 3 },
     ]},
     { id: 'tpl3', name: '年次外観・動作確認', items: [
-      { id: 'ti6', name: '外観異常', lowerLimit: null, upperLimit: null, sortOrder: 0 },
-      { id: 'ti7', name: '電源ON/OFF動作', lowerLimit: null, upperLimit: null, sortOrder: 1 },
-      { id: 'ti8', name: 'アラーム動作', lowerLimit: null, upperLimit: null, sortOrder: 2 },
+      { id: 'ti10', name: '外観異常確認', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 0 },
+      { id: 'ti11', name: '電源ON/OFF動作', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 1 },
+      { id: 'ti12', name: 'アラーム動作', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 2 },
     ]},
   ],
   devices: [
     { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象', pmdaApprovalNumber: '20150BZX00234000', pmdaDocUpdatedAt: '2024-03-01', pmdaUpdateAvailable: false, inspectionItems: [
-      { id: 'di1', name: '絶縁抵抗（MΩ）', lowerLimit: null, upperLimit: 0.1, sortOrder: 0 },
-      { id: 'di2', name: '接地抵抗（Ω）', lowerLimit: null, upperLimit: 0.1, sortOrder: 1 },
-      { id: 'di3', name: '漏れ電流（μA）', lowerLimit: null, upperLimit: 100, sortOrder: 2 },
+      { id: 'di1', name: '外観・ケーブル確認', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 0 },
+      { id: 'di2', name: '絶縁抵抗（MΩ）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, sortOrder: 1 },
+      { id: 'di3', name: '接地抵抗（Ω）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, sortOrder: 2 },
+      { id: 'di4', name: '漏れ電流（μA）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 100, sortOrder: 3 },
     ]},
     { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, inspectionItems: [] },
     { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, inspectionItems: [] },
     { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true, inspectionItems: [
-      { id: 'di4', name: 'プローブ出力（mW）', lowerLimit: 10, upperLimit: 50, sortOrder: 0 },
+      { id: 'di5', name: 'プローブ出力（mW）', category: '性能点検', lowerLimit: 10, upperLimit: 50, sortOrder: 0 },
     ]},
   ],
   inspections: [
     { id: 'i1', deviceId: 'd1', scheduledAt: '2026-06-29', intervalDays: 365, description: '年次定期点検', completed: false, items: [
-      { id: 'ii1', name: '絶縁抵抗', lowerLimit: null, upperLimit: 0.1, measuredValue: null, judgment: null },
-      { id: 'ii2', name: '接地抵抗（Ω）', lowerLimit: null, upperLimit: 0.1, measuredValue: null, judgment: null },
-      { id: 'ii3', name: '漏れ電流（μA）', lowerLimit: null, upperLimit: 100, measuredValue: null, judgment: null },
+      { id: 'ii1', name: '外観・ケーブル確認', category: '外装・機能点検', lowerLimit: null, upperLimit: null, measuredValue: null, judgment: null },
+      { id: 'ii2', name: '絶縁抵抗（MΩ）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, measuredValue: null, judgment: null },
+      { id: 'ii3', name: '接地抵抗（Ω）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, measuredValue: null, judgment: null },
+      { id: 'ii4', name: '漏れ電流（μA）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 100, measuredValue: null, judgment: null },
     ]},
     { id: 'i2', deviceId: 'd2', scheduledAt: '2026-05-01', intervalDays: 180, description: '半年点検・キャリブレーション', completed: false, items: [] },
     { id: 'i3', deviceId: 'd4', scheduledAt: '2026-07-15', intervalDays: 90, description: '四半期点検', completed: false, items: [
-      { id: 'ii4', name: 'プローブ出力（mW）', lowerLimit: 10, upperLimit: 50, measuredValue: null, judgment: null },
+      { id: 'ii5', name: 'プローブ出力（mW）', category: '性能点検', lowerLimit: 10, upperLimit: 50, measuredValue: null, judgment: null },
     ]},
   ],
   maintenanceLogs: [
@@ -1393,6 +1458,8 @@ function applyPmdaResult(r) {
 // ==================== テンプレート管理 ====================
 let editingTemplateId = null;
 
+const TPL_CATEGORIES = ['外装・機能点検', '性能点検', '電気的安全性点検'];
+
 function renderTemplateList() {
   const body = document.getElementById('tpl-list-body');
   const empty = document.getElementById('tpl-list-empty');
@@ -1401,17 +1468,22 @@ function renderTemplateList() {
     empty.classList.remove('hidden');
   } else {
     empty.classList.add('hidden');
-    body.innerHTML = db.inspectionTemplates.map(t => `
+    body.innerHTML = db.inspectionTemplates.map(t => {
+      const catSummary = TPL_CATEGORIES.map(cat => {
+        const count = t.items.filter(i => i.category === cat).length;
+        return count > 0 ? `<span class="text-xs text-gray-400">${cat}×${count}</span>` : '';
+      }).filter(Boolean).join('<span class="text-gray-200 mx-1">|</span>');
+      return `
       <div class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50">
         <div class="flex-1 min-w-0">
           <div class="text-sm font-medium text-gray-900">${t.name}</div>
-          <div class="text-xs text-gray-400 mt-0.5">${t.items.length > 0 ? t.items.map(i => i.name).join('、') : '点検項目なし'}</div>
+          <div class="flex gap-2 mt-0.5">${catSummary || '<span class="text-xs text-gray-400">点検項目なし</span>'}</div>
         </div>
         <span class="text-xs text-gray-400 flex-shrink-0">${t.items.length}項目</span>
         <button onclick="tplOpenEdit('${t.id}')" class="text-xs text-blue-600 hover:underline flex-shrink-0">編集</button>
         <button onclick="tplDelete('${t.id}','${t.name}')" class="text-xs text-red-500 hover:underline flex-shrink-0">削除</button>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 }
 
@@ -1440,53 +1512,70 @@ function openTemplateManagerModal() {
   document.getElementById('modal-template-manager').classList.remove('hidden');
 }
 
+function tplClearEdit() {
+  document.getElementById('tpl-name').value = '';
+  TPL_CATEGORIES.forEach(cat => {
+    document.getElementById(`tpl-tbody-${cat}`).innerHTML = '';
+    document.getElementById(`tpl-table-${cat}`).style.display = 'none';
+    document.getElementById(`tpl-empty-${cat}`).style.display = '';
+  });
+}
+
 function tplOpenNew() {
   editingTemplateId = null;
-  document.getElementById('tpl-name').value = '';
-  document.getElementById('tpl-items-container').innerHTML = '';
-  document.getElementById('tpl-items-header').style.display = 'none';
-  tplAddItemRow();
+  tplClearEdit();
   tplSetView('edit');
 }
 
 function tplOpenEdit(id) {
   editingTemplateId = id;
   const t = db.inspectionTemplates.find(t => t.id === id);
+  tplClearEdit();
   document.getElementById('tpl-name').value = t.name;
-  document.getElementById('tpl-items-container').innerHTML = '';
-  if (t.items.length === 0) {
-    document.getElementById('tpl-items-header').style.display = 'none';
-    tplAddItemRow();
-  } else {
-    document.getElementById('tpl-items-header').style.display = '';
-    t.items.forEach(item => tplAddItemRow(item));
-  }
+  t.items.forEach(item => tplAddItemRow(item.category || '外装・機能点検', item));
   tplSetView('edit');
 }
 
-function tplAddItemRow(item) {
-  const container = document.getElementById('tpl-items-container');
-  document.getElementById('tpl-items-header').style.display = '';
-  const row = document.createElement('div');
-  row.className = 'grid grid-cols-12 gap-2 items-center tpl-item-row';
+function tplAddItemRow(category, item) {
+  const tbody = document.getElementById(`tpl-tbody-${category}`);
+  const table = document.getElementById(`tpl-table-${category}`);
+  const emptyMsg = document.getElementById(`tpl-empty-${category}`);
+  if (!tbody) return;
+  table.style.display = '';
+  emptyMsg.style.display = 'none';
+  const row = document.createElement('tr');
+  row.className = `tpl-item-row tpl-cat-${category}`;
+  row.dataset.category = category;
   row.innerHTML = `
-    <div class="col-span-6"><input type="text" value="${item?.name ?? ''}" placeholder="項目名" class="tpl-item-name w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-3"><input type="number" step="any" value="${item?.lowerLimit ?? ''}" placeholder="下限" class="tpl-item-lower w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-2"><input type="number" step="any" value="${item?.upperLimit ?? ''}" placeholder="上限" class="tpl-item-upper w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-1 flex justify-center"><button type="button" onclick="this.closest('.tpl-item-row').remove();if(!document.querySelectorAll('.tpl-item-row').length)document.getElementById('tpl-items-header').style.display='none'" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></div>`;
-  container.appendChild(row);
+    <td class="px-3 py-1.5"><input type="text" value="${item?.name ?? ''}" placeholder="項目名" class="tpl-item-name w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="px-2 py-1.5"><input type="number" step="any" value="${item?.lowerLimit ?? ''}" placeholder="—" class="tpl-item-lower w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="px-2 py-1.5"><input type="number" step="any" value="${item?.upperLimit ?? ''}" placeholder="—" class="tpl-item-upper w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="px-2 py-1.5 text-center"><button type="button" onclick="tplRemoveRow(this,'${category}')" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></td>`;
+  tbody.appendChild(row);
+}
+
+function tplRemoveRow(btn, category) {
+  btn.closest('tr').remove();
+  const tbody = document.getElementById(`tpl-tbody-${category}`);
+  if (!tbody.querySelector('tr')) {
+    document.getElementById(`tpl-table-${category}`).style.display = 'none';
+    document.getElementById(`tpl-empty-${category}`).style.display = '';
+  }
 }
 
 function tplSave() {
   const name = document.getElementById('tpl-name').value.trim();
   if (!name) { alert('テンプレート名を入力してください'); return; }
   const items = [];
-  document.querySelectorAll('.tpl-item-row').forEach((row, idx) => {
-    const itemName = row.querySelector('.tpl-item-name').value.trim();
-    if (!itemName) return;
-    const lower = row.querySelector('.tpl-item-lower').value;
-    const upper = row.querySelector('.tpl-item-upper').value;
-    items.push({ id: uid(), name: itemName, lowerLimit: lower !== '' ? parseFloat(lower) : null, upperLimit: upper !== '' ? parseFloat(upper) : null, sortOrder: idx });
+  let sortOrder = 0;
+  TPL_CATEGORIES.forEach(cat => {
+    document.querySelectorAll(`.tpl-cat-${CSS.escape(cat)}`).forEach(row => {
+      const itemName = row.querySelector('.tpl-item-name').value.trim();
+      if (!itemName) return;
+      const lower = row.querySelector('.tpl-item-lower').value;
+      const upper = row.querySelector('.tpl-item-upper').value;
+      items.push({ id: uid(), name: itemName, category: cat, lowerLimit: lower !== '' ? parseFloat(lower) : null, upperLimit: upper !== '' ? parseFloat(upper) : null, sortOrder: sortOrder++ });
+    });
   });
   if (editingTemplateId) {
     const t = db.inspectionTemplates.find(t => t.id === editingTemplateId);
@@ -1512,11 +1601,8 @@ function applyInspectionTemplate() {
   if (!templateId) return;
   const t = db.inspectionTemplates.find(t => t.id === templateId);
   if (!t) return;
-  // Clear and repopulate device inspection items
-  document.getElementById('f-inspection-items').innerHTML = '';
-  document.getElementById('f-inspection-items-empty').style.display = 'none';
-  document.getElementById('device-items-table').style.display = t.items.length > 0 ? '' : 'none';
-  t.items.forEach(item => addDeviceInspectionItemRow(item));
+  clearDeviceInspectionItems();
+  t.items.forEach(item => addDeviceInspectionItemRow(item.category || '外装・機能点検', item));
   sel.value = '';
 }
 
@@ -1563,44 +1649,46 @@ function openDeviceModal(id) {
 }
 
 function renderDeviceInspectionItems(items) {
-  const container = document.getElementById('f-inspection-items');
-  const emptyMsg = document.getElementById('f-inspection-items-empty');
-  const header = document.getElementById('device-items-table');
-  container.innerHTML = '';
-  if (items.length === 0) {
-    emptyMsg.style.display = '';
-    header.style.display = 'none';
-  } else {
-    emptyMsg.style.display = 'none';
-    header.style.display = '';
-    items.forEach((item, idx) => addDeviceInspectionItemRow(item));
-  }
+  clearDeviceInspectionItems();
+  items.forEach(item => addDeviceInspectionItemRow(item.category || '外装・機能点検', item));
 }
 
-function addDeviceInspectionItemRow(item) {
-  const container = document.getElementById('f-inspection-items');
-  const emptyMsg = document.getElementById('f-inspection-items-empty');
-  const table = document.getElementById('device-items-table');
-  emptyMsg.style.display = 'none';
+const DI_CATEGORIES = ['外装・機能点検', '性能点検', '電気的安全性点検'];
+
+function clearDeviceInspectionItems() {
+  DI_CATEGORIES.forEach(cat => {
+    document.getElementById(`di-tbody-${cat}`).innerHTML = '';
+    document.getElementById(`di-table-${cat}`).style.display = 'none';
+    document.getElementById(`di-empty-${cat}`).style.display = '';
+  });
+}
+
+function addDeviceInspectionItemRow(category, item) {
+  const cat = category || item?.category || '外装・機能点検';
+  const tbody = document.getElementById(`di-tbody-${cat}`);
+  const table = document.getElementById(`di-table-${cat}`);
+  const emptyMsg = document.getElementById(`di-empty-${cat}`);
+  if (!tbody) return;
   table.style.display = '';
+  emptyMsg.style.display = 'none';
   const row = document.createElement('tr');
-  row.className = 'device-inspection-item-row divide-y divide-gray-100';
+  row.className = `device-inspection-item-row di-cat-row`;
+  row.dataset.category = cat;
   row.innerHTML = `
-    <td class="py-1 pr-2"><input type="text" value="${item?.name ?? ''}" placeholder="項目名" class="di-item-name w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
-    <td class="py-1 px-1"><input type="number" step="any" value="${item?.lowerLimit ?? ''}" placeholder="—" class="di-item-lower w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
-    <td class="py-1 px-1"><input type="number" step="any" value="${item?.upperLimit ?? ''}" placeholder="—" class="di-item-upper w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
-    <td class="py-1 pl-1 text-center"><button type="button" onclick="removeDeviceInspectionItemRow(this)" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></td>
+    <td class="px-3 py-1"><input type="text" value="${item?.name ?? ''}" placeholder="項目名" class="di-item-name w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="px-2 py-1"><input type="number" step="any" value="${item?.lowerLimit ?? ''}" placeholder="—" class="di-item-lower w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="px-2 py-1"><input type="number" step="any" value="${item?.upperLimit ?? ''}" placeholder="—" class="di-item-upper w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="px-1 py-1 text-center"><button type="button" onclick="removeDeviceInspectionItemRow(this,'${cat}')" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></td>
   `;
-  container.appendChild(row);
+  tbody.appendChild(row);
 }
 
-function removeDeviceInspectionItemRow(btn) {
-  const row = btn.closest('.device-inspection-item-row');
-  row.remove();
-  const remaining = document.querySelectorAll('.device-inspection-item-row');
-  if (remaining.length === 0) {
-    document.getElementById('f-inspection-items-empty').style.display = '';
-    document.getElementById('device-items-table').style.display = 'none';
+function removeDeviceInspectionItemRow(btn, cat) {
+  btn.closest('tr').remove();
+  const tbody = document.getElementById(`di-tbody-${cat}`);
+  if (tbody && !tbody.querySelector('tr')) {
+    document.getElementById(`di-table-${cat}`).style.display = 'none';
+    document.getElementById(`di-empty-${cat}`).style.display = '';
   }
 }
 
@@ -1635,14 +1723,17 @@ function saveDevice() {
     alert('必須項目を入力してください');
     return;
   }
-  // 定期点検項目を収集
+  // 定期点検項目を収集（カテゴリ順）
   const inspectionItems = [];
-  document.querySelectorAll('.device-inspection-item-row').forEach((row, idx) => {
-    const name = row.querySelector('.di-item-name').value.trim();
-    if (!name) return;
-    const lower = row.querySelector('.di-item-lower').value;
-    const upper = row.querySelector('.di-item-upper').value;
-    inspectionItems.push({ id: uid(), name, lowerLimit: lower !== '' ? parseFloat(lower) : null, upperLimit: upper !== '' ? parseFloat(upper) : null, sortOrder: idx });
+  let sortOrder = 0;
+  DI_CATEGORIES.forEach(cat => {
+    document.querySelectorAll(`#di-tbody-${cat} tr`).forEach(row => {
+      const name = row.querySelector('.di-item-name').value.trim();
+      if (!name) return;
+      const lower = row.querySelector('.di-item-lower').value;
+      const upper = row.querySelector('.di-item-upper').value;
+      inspectionItems.push({ id: uid(), name, category: cat, lowerLimit: lower !== '' ? parseFloat(lower) : null, upperLimit: upper !== '' ? parseFloat(upper) : null, sortOrder: sortOrder++ });
+    });
   });
   vals.inspectionItems = inspectionItems;
 
@@ -1744,8 +1835,17 @@ function openCompleteInspectionModal(id) {
     emptyMsg.classList.remove('hidden');
   } else {
     emptyMsg.classList.add('hidden');
-    container.innerHTML = s.items.map((item, idx) => `
-      <tr id="ic-row-${item.id}" class="hover:bg-gray-50">
+    const KNOWN_CATS = ['外装・機能点検', '性能点検', '電気的安全性点検'];
+    let lastCat = null;
+    container.innerHTML = s.items.map((item) => {
+      const cat = item.category || '';
+      let catHeader = '';
+      if (KNOWN_CATS.includes(cat) && cat !== lastCat) {
+        lastCat = cat;
+        catHeader = `<tr class="bg-blue-50"><td colspan="5" class="px-3 py-1 text-xs font-semibold text-blue-700 border-t border-blue-100">${cat}</td></tr>`;
+      }
+      return catHeader + `
+      <tr id="ic-row-${item.id}" class="border-t border-gray-100 hover:bg-gray-50">
         <td class="px-3 py-1.5 text-gray-800 font-medium">${item.name}</td>
         <td class="px-2 py-1.5">
           <select id="ic-jdg-${item.id}" onchange="applyJudgmentStyle('${item.id}');updateIcProgress()"
@@ -1758,8 +1858,8 @@ function openCompleteInspectionModal(id) {
           class="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"></td>
         <td class="px-2 py-1.5 text-center text-xs text-gray-500">${item.upperLimit ?? '—'}</td>
         <td class="px-2 py-1.5 text-center text-xs text-gray-500">${item.lowerLimit ?? '—'}</td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
   // Reset progress
   const progressBar = document.getElementById('ic-progress-bar');
@@ -1818,7 +1918,7 @@ function saveInspectionComplete() {
   db.inspections.push({
     id: uid(), deviceId: s.deviceId, scheduledAt: next.toISOString().split('T')[0],
     intervalDays: s.intervalDays, description: s.description, completed: false,
-    items: (device?.inspectionItems ?? []).map(item => ({ id: uid(), name: item.name, lowerLimit: item.lowerLimit, upperLimit: item.upperLimit, measuredValue: null, judgment: null })),
+    items: (device?.inspectionItems ?? []).map(item => ({ id: uid(), name: item.name, category: item.category || '外装・機能点検', lowerLimit: item.lowerLimit, upperLimit: item.upperLimit, measuredValue: null, judgment: null })),
   });
   closeModal('modal-inspection-complete');
   renderInspections();

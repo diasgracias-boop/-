@@ -2,9 +2,12 @@
 
 import { useRef, useState } from "react";
 
+const INSPECTION_CATEGORIES = ["外装・機能点検", "性能点検", "電気的安全性点検"] as const;
+
 interface InspectionItem {
   id: string;
   name: string;
+  category?: string;
   lowerLimit: number | null;
   upperLimit: number | null;
 }
@@ -143,57 +146,72 @@ export default function InspectionCompleteModal({ scheduleId, description, items
                     <th className="text-center px-2 py-2 w-16">下限</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {items.map((item, index) => {
-                    const m = measurements[index];
-                    const isNg = m.judgment === "NG";
-                    const isOk = m.judgment === "OK";
-                    return (
-                      <tr
-                        key={item.id}
-                        className={`${isNg ? "bg-red-50" : isOk ? "bg-green-50/40" : "hover:bg-gray-50"}`}
-                      >
-                        <td className="px-3 py-1.5 text-gray-800 font-medium">{item.name}</td>
-                        <td className="px-2 py-1.5">
-                          <select
-                            value={m.judgment}
-                            onChange={(e) => updateMeasurement(index, "judgment", e.target.value)}
-                            className={`w-full border rounded px-1.5 py-1 text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                              isOk
-                                ? "border-green-400 bg-green-100 text-green-700"
-                                : isNg
-                                ? "border-red-400 bg-red-100 text-red-700"
-                                : "border-gray-300 text-gray-500"
-                            }`}
-                          >
-                            <option value="">—</option>
-                            <option value="OK">OK</option>
-                            <option value="NG">NG</option>
-                          </select>
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <input
-                            ref={(el) => { inputRefs.current[index] = el; }}
-                            type="number"
-                            value={m.measuredValue}
-                            onChange={(e) => updateMeasurement(index, "measuredValue", e.target.value)}
-                            onKeyDown={(e) => handleValueKeyDown(e, index)}
-                            step="any"
-                            placeholder="—"
-                            className={`w-full border rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                              isNg ? "border-red-300 bg-red-50" : "border-gray-300"
-                            }`}
-                          />
-                        </td>
-                        <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
-                          {item.upperLimit ?? "—"}
-                        </td>
-                        <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
-                          {item.lowerLimit ?? "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                <tbody>
+                  {(() => {
+                    const rows: React.ReactNode[] = [];
+                    let lastCat: string | null = null;
+                    items.forEach((item, index) => {
+                      const cat = item.category ?? "";
+                      const isKnownCat = INSPECTION_CATEGORIES.includes(cat as typeof INSPECTION_CATEGORIES[number]);
+                      if (isKnownCat && cat !== lastCat) {
+                        lastCat = cat;
+                        rows.push(
+                          <tr key={`cat-${cat}`} className="bg-blue-50">
+                            <td colSpan={5} className="px-3 py-1 text-xs font-semibold text-blue-700 border-t border-blue-100">{cat}</td>
+                          </tr>
+                        );
+                      }
+                      const m = measurements[index];
+                      const isNg = m.judgment === "NG";
+                      const isOk = m.judgment === "OK";
+                      rows.push(
+                        <tr
+                          key={item.id}
+                          className={`border-t border-gray-100 ${isNg ? "bg-red-50" : isOk ? "bg-green-50/40" : "hover:bg-gray-50"}`}
+                        >
+                          <td className="px-3 py-1.5 text-gray-800 font-medium">{item.name}</td>
+                          <td className="px-2 py-1.5">
+                            <select
+                              value={m.judgment}
+                              onChange={(e) => updateMeasurement(index, "judgment", e.target.value)}
+                              className={`w-full border rounded px-1.5 py-1 text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                isOk
+                                  ? "border-green-400 bg-green-100 text-green-700"
+                                  : isNg
+                                  ? "border-red-400 bg-red-100 text-red-700"
+                                  : "border-gray-300 text-gray-500"
+                              }`}
+                            >
+                              <option value="">—</option>
+                              <option value="OK">OK</option>
+                              <option value="NG">NG</option>
+                            </select>
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input
+                              ref={(el) => { inputRefs.current[index] = el; }}
+                              type="number"
+                              value={m.measuredValue}
+                              onChange={(e) => updateMeasurement(index, "measuredValue", e.target.value)}
+                              onKeyDown={(e) => handleValueKeyDown(e, index)}
+                              step="any"
+                              placeholder="—"
+                              className={`w-full border rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                isNg ? "border-red-300 bg-red-50" : "border-gray-300"
+                              }`}
+                            />
+                          </td>
+                          <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
+                            {item.upperLimit ?? "—"}
+                          </td>
+                          <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
+                            {item.lowerLimit ?? "—"}
+                          </td>
+                        </tr>
+                      );
+                    });
+                    return rows;
+                  })()}
                 </tbody>
               </table>
             </div>

@@ -51,6 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         ? {
             create: deviceItems.map((item) => ({
               name: item.name,
+              category: item.category,
               lowerLimit: item.lowerLimit,
               upperLimit: item.upperLimit,
             })),

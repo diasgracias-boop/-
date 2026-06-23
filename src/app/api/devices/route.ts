@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const incomingItems: { name: string; lowerLimit?: number | null; upperLimit?: number | null }[] = body.inspectionItems ?? [];
+  const incomingItems: { name: string; category?: string; lowerLimit?: number | null; upperLimit?: number | null }[] = body.inspectionItems ?? [];
 
   const device = await prisma.device.create({
     data: {
@@ -114,6 +114,7 @@ export async function POST(req: NextRequest) {
       inspectionItems: incomingItems.length > 0 ? {
         create: incomingItems.map((item, idx) => ({
           name: item.name,
+          category: item.category ?? "外装・機能点検",
           lowerLimit: item.lowerLimit ?? null,
           upperLimit: item.upperLimit ?? null,
           sortOrder: idx,

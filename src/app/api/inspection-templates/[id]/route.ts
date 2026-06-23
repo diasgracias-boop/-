@@ -17,8 +17,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     data: {
       name: body.name,
       items: {
-        create: (body.items ?? []).map((item: { name: string; lowerLimit?: number; upperLimit?: number }, idx: number) => ({
+        create: (body.items ?? []).map((item: { name: string; category?: string; lowerLimit?: number; upperLimit?: number }, idx: number) => ({
           name: item.name,
+          category: item.category ?? "外装・機能点検",
           lowerLimit: item.lowerLimit ?? null,
           upperLimit: item.upperLimit ?? null,
           sortOrder: idx,

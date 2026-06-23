@@ -47,16 +47,20 @@ interface DeviceFormData {
   pmdaDocUpdatedAt: string;
 }
 
+const INSPECTION_CATEGORIES = ["外装・機能点検", "性能点検", "電気的安全性点検"] as const;
+type InspectionCategory = typeof INSPECTION_CATEGORIES[number];
+
 interface DeviceInspectionItem {
   id?: string;
   name: string;
+  category: InspectionCategory;
   lowerLimit: string;
   upperLimit: string;
 }
 
 interface DeviceWithItems extends Partial<DeviceFormData> {
   id: string;
-  inspectionItems?: { id: string; name: string; lowerLimit: number | null; upperLimit: number | null }[];
+  inspectionItems?: { id: string; name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[];
 }
 
 interface DeviceModalProps {
@@ -113,12 +117,13 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     pmdaApprovalNumber: device?.pmdaApprovalNumber ?? "",
     pmdaDocUpdatedAt: device?.pmdaDocUpdatedAt ?? "",
   });
-  const [templates, setTemplates] = useState<{ id: string; name: string; items: { name: string; lowerLimit: number | null; upperLimit: number | null }[] }[]>([]);
+  const [templates, setTemplates] = useState<{ id: string; name: string; items: { name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[] }[]>([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [inspectionItems, setInspectionItems] = useState<DeviceInspectionItem[]>(
     device?.inspectionItems?.map((i) => ({
       id: i.id,
       name: i.name,
+      category: (INSPECTION_CATEGORIES.includes(i.category as InspectionCategory) ? i.category : "外装・機能点検") as InspectionCategory,
       lowerLimit: i.lowerLimit?.toString() ?? "",
       upperLimit: i.upperLimit?.toString() ?? "",
     })) ?? []
@@ -137,7 +142,12 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   function applyTemplate(templateId: string) {
     const t = templates.find((t) => t.id === templateId);
     if (!t) return;
-    setInspectionItems(t.items.map((i) => ({ name: i.name, lowerLimit: i.lowerLimit?.toString() ?? "", upperLimit: i.upperLimit?.toString() ?? "" })));
+    setInspectionItems(t.items.map((i) => ({
+      name: i.name,
+      category: (INSPECTION_CATEGORIES.includes(i.category as InspectionCategory) ? i.category : "外装・機能点検") as InspectionCategory,
+      lowerLimit: i.lowerLimit?.toString() ?? "",
+      upperLimit: i.upperLimit?.toString() ?? "",
+    })));
   }
 
   function applyPmdaResult(r: PmdaResult) {
@@ -175,6 +185,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
       .filter((item) => item.name.trim())
       .map((item) => ({
         name: item.name.trim(),
+        category: item.category,
         lowerLimit: item.lowerLimit !== "" ? parseFloat(item.lowerLimit) : null,
         upperLimit: item.upperLimit !== "" ? parseFloat(item.upperLimit) : null,
       }));
@@ -395,74 +406,88 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                     ))}
                   </select>
                 </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-500">項目を個別に編集できます</span>
-                  <button
-                    type="button"
-                    onClick={() => setInspectionItems((prev) => [...prev, { name: "", lowerLimit: "", upperLimit: "" }])}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    + 項目を追加
-                  </button>
+                <div className="mb-2">
+                  <span className="text-xs text-gray-500">カテゴリごとに項目を個別に編集できます</span>
                 </div>
-                {inspectionItems.length > 0 ? (
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="text-xs text-gray-500 font-medium border-b border-gray-200">
-                        <th className="text-left pb-1.5">点検項目</th>
-                        <th className="text-center pb-1.5 w-24">下限</th>
-                        <th className="text-center pb-1.5 w-24">上限</th>
-                        <th className="w-6"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {inspectionItems.map((item, index) => (
-                        <tr key={index}>
-                          <td className="py-1 pr-2">
-                            <input
-                              type="text"
-                              value={item.name}
-                              onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, name: e.target.value } : it))}
-                              placeholder="項目名"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="py-1 px-1">
-                            <input
-                              type="number"
-                              value={item.lowerLimit}
-                              onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, lowerLimit: e.target.value } : it))}
-                              placeholder="—"
-                              step="any"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="py-1 px-1">
-                            <input
-                              type="number"
-                              value={item.upperLimit}
-                              onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, upperLimit: e.target.value } : it))}
-                              placeholder="—"
-                              step="any"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="py-1 pl-1 text-center">
-                            <button
-                              type="button"
-                              onClick={() => setInspectionItems((prev) => prev.filter((_, i) => i !== index))}
-                              className="text-gray-400 hover:text-red-500 text-lg leading-none"
-                            >
-                              ×
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p className="text-xs text-gray-400">点検項目がありません。「+ 項目を追加」で追加してください。</p>
-                )}
+                <div className="space-y-3">
+                  {INSPECTION_CATEGORIES.map((cat) => {
+                    const catItems = inspectionItems
+                      .map((item, originalIndex) => ({ item, originalIndex }))
+                      .filter(({ item }) => item.category === cat);
+                    return (
+                      <div key={cat} className="border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                          <span className="text-xs font-semibold text-gray-600">{cat}</span>
+                          <button
+                            type="button"
+                            onClick={() => setInspectionItems((prev) => [...prev, { name: "", category: cat, lowerLimit: "", upperLimit: "" }])}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            + 追加
+                          </button>
+                        </div>
+                        {catItems.length > 0 ? (
+                          <table className="w-full text-sm border-collapse">
+                            <thead>
+                              <tr className="text-xs text-gray-500 font-medium border-b border-gray-100">
+                                <th className="text-left px-3 py-1.5">点検項目</th>
+                                <th className="text-center px-2 py-1.5 w-20">下限</th>
+                                <th className="text-center px-2 py-1.5 w-20">上限</th>
+                                <th className="w-6"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                              {catItems.map(({ item, originalIndex }) => (
+                                <tr key={originalIndex}>
+                                  <td className="px-3 py-1">
+                                    <input
+                                      type="text"
+                                      value={item.name}
+                                      onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === originalIndex ? { ...it, name: e.target.value } : it))}
+                                      placeholder="項目名"
+                                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                  </td>
+                                  <td className="px-2 py-1">
+                                    <input
+                                      type="number"
+                                      value={item.lowerLimit}
+                                      onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === originalIndex ? { ...it, lowerLimit: e.target.value } : it))}
+                                      placeholder="—"
+                                      step="any"
+                                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                  </td>
+                                  <td className="px-2 py-1">
+                                    <input
+                                      type="number"
+                                      value={item.upperLimit}
+                                      onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === originalIndex ? { ...it, upperLimit: e.target.value } : it))}
+                                      placeholder="—"
+                                      step="any"
+                                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                  </td>
+                                  <td className="px-1 py-1 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setInspectionItems((prev) => prev.filter((_, i) => i !== originalIndex))}
+                                      className="text-gray-400 hover:text-red-500 text-lg leading-none"
+                                    >
+                                      ×
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <p className="px-3 py-2 text-xs text-gray-400">項目なし</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="border-t border-gray-200 pt-4">
