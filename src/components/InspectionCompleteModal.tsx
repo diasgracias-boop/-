@@ -125,11 +125,7 @@ export default function InspectionCompleteModal({ scheduleId, description, items
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 bg-gray-50 z-10">
                   <tr className="text-xs text-gray-500 font-medium border-b border-gray-200">
-                    <th className="text-left px-3 py-2 w-6 text-gray-400">#</th>
                     <th className="text-left px-3 py-2">点検項目</th>
-                    <th className="text-center px-2 py-2 w-16">下限</th>
-                    <th className="text-center px-2 py-2 w-16">上限</th>
-                    <th className="text-center px-2 py-2 w-24">測定値</th>
                     <th className="text-center px-2 py-2 w-20">
                       <div className="flex items-center justify-center gap-1">
                         <span>判定</span>
@@ -142,6 +138,9 @@ export default function InspectionCompleteModal({ scheduleId, description, items
                         </button>
                       </div>
                     </th>
+                    <th className="text-center px-2 py-2 w-24">測定値</th>
+                    <th className="text-center px-2 py-2 w-16">上限</th>
+                    <th className="text-center px-2 py-2 w-16">下限</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -154,28 +153,7 @@ export default function InspectionCompleteModal({ scheduleId, description, items
                         key={item.id}
                         className={`${isNg ? "bg-red-50" : isOk ? "bg-green-50/40" : "hover:bg-gray-50"}`}
                       >
-                        <td className="px-3 py-1.5 text-xs text-gray-400 text-center">{index + 1}</td>
                         <td className="px-3 py-1.5 text-gray-800 font-medium">{item.name}</td>
-                        <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
-                          {item.lowerLimit ?? "—"}
-                        </td>
-                        <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
-                          {item.upperLimit ?? "—"}
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <input
-                            ref={(el) => { inputRefs.current[index] = el; }}
-                            type="number"
-                            value={m.measuredValue}
-                            onChange={(e) => updateMeasurement(index, "measuredValue", e.target.value)}
-                            onKeyDown={(e) => handleValueKeyDown(e, index)}
-                            step="any"
-                            placeholder="—"
-                            className={`w-full border rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                              isNg ? "border-red-300 bg-red-50" : "border-gray-300"
-                            }`}
-                          />
-                        </td>
                         <td className="px-2 py-1.5">
                           <select
                             value={m.judgment}
@@ -192,6 +170,26 @@ export default function InspectionCompleteModal({ scheduleId, description, items
                             <option value="OK">OK</option>
                             <option value="NG">NG</option>
                           </select>
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <input
+                            ref={(el) => { inputRefs.current[index] = el; }}
+                            type="number"
+                            value={m.measuredValue}
+                            onChange={(e) => updateMeasurement(index, "measuredValue", e.target.value)}
+                            onKeyDown={(e) => handleValueKeyDown(e, index)}
+                            step="any"
+                            placeholder="—"
+                            className={`w-full border rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              isNg ? "border-red-300 bg-red-50" : "border-gray-300"
+                            }`}
+                          />
+                        </td>
+                        <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
+                          {item.upperLimit ?? "—"}
+                        </td>
+                        <td className="px-2 py-1.5 text-center text-gray-500 text-xs">
+                          {item.lowerLimit ?? "—"}
                         </td>
                       </tr>
                     );
