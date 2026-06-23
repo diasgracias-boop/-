@@ -589,10 +589,17 @@
             <span class="text-xs text-gray-500">項目を個別に編集できます</span>
             <button type="button" onclick="addDeviceInspectionItemRow()" class="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 項目を追加</button>
           </div>
-          <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-1" id="device-items-header" style="display:none">
-            <div class="col-span-6">点検項目</div><div class="col-span-3">下限</div><div class="col-span-2">上限</div><div class="col-span-1"></div>
-          </div>
-          <div id="f-inspection-items" class="space-y-2"></div>
+          <table class="w-full text-sm border-collapse" id="device-items-table" style="display:none">
+            <thead>
+              <tr class="text-xs text-gray-500 font-medium border-b border-gray-200">
+                <th class="text-left pb-1.5">点検項目</th>
+                <th class="text-center pb-1.5 w-24">下限</th>
+                <th class="text-center pb-1.5 w-24">上限</th>
+                <th class="w-6"></th>
+              </tr>
+            </thead>
+            <tbody id="f-inspection-items"></tbody>
+          </table>
           <p id="f-inspection-items-empty" class="text-xs text-gray-400">点検項目がありません。「+ 項目を追加」で追加してください。</p>
         </div>
         <div class="border-t border-gray-200 pt-4">
@@ -1508,7 +1515,7 @@ function applyInspectionTemplate() {
   // Clear and repopulate device inspection items
   document.getElementById('f-inspection-items').innerHTML = '';
   document.getElementById('f-inspection-items-empty').style.display = 'none';
-  document.getElementById('device-items-header').style.display = t.items.length > 0 ? '' : 'none';
+  document.getElementById('device-items-table').style.display = t.items.length > 0 ? '' : 'none';
   t.items.forEach(item => addDeviceInspectionItemRow(item));
   sel.value = '';
 }
@@ -1558,7 +1565,7 @@ function openDeviceModal(id) {
 function renderDeviceInspectionItems(items) {
   const container = document.getElementById('f-inspection-items');
   const emptyMsg = document.getElementById('f-inspection-items-empty');
-  const header = document.getElementById('device-items-header');
+  const header = document.getElementById('device-items-table');
   container.innerHTML = '';
   if (items.length === 0) {
     emptyMsg.style.display = '';
@@ -1573,17 +1580,16 @@ function renderDeviceInspectionItems(items) {
 function addDeviceInspectionItemRow(item) {
   const container = document.getElementById('f-inspection-items');
   const emptyMsg = document.getElementById('f-inspection-items-empty');
-  const header = document.getElementById('device-items-header');
+  const table = document.getElementById('device-items-table');
   emptyMsg.style.display = 'none';
-  header.style.display = '';
-  const rowId = uid();
-  const row = document.createElement('div');
-  row.className = 'grid grid-cols-12 gap-2 items-center device-inspection-item-row';
+  table.style.display = '';
+  const row = document.createElement('tr');
+  row.className = 'device-inspection-item-row divide-y divide-gray-100';
   row.innerHTML = `
-    <div class="col-span-6"><input type="text" value="${item?.name ?? ''}" placeholder="項目名" class="di-item-name w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-3"><input type="number" step="any" value="${item?.lowerLimit ?? ''}" placeholder="下限" class="di-item-lower w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-2"><input type="number" step="any" value="${item?.upperLimit ?? ''}" placeholder="上限" class="di-item-upper w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-    <div class="col-span-1 flex justify-center"><button type="button" onclick="removeDeviceInspectionItemRow(this)" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></div>
+    <td class="py-1 pr-2"><input type="text" value="${item?.name ?? ''}" placeholder="項目名" class="di-item-name w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="py-1 px-1"><input type="number" step="any" value="${item?.lowerLimit ?? ''}" placeholder="—" class="di-item-lower w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="py-1 px-1"><input type="number" step="any" value="${item?.upperLimit ?? ''}" placeholder="—" class="di-item-upper w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"></td>
+    <td class="py-1 pl-1 text-center"><button type="button" onclick="removeDeviceInspectionItemRow(this)" class="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></td>
   `;
   container.appendChild(row);
 }
@@ -1594,9 +1600,10 @@ function removeDeviceInspectionItemRow(btn) {
   const remaining = document.querySelectorAll('.device-inspection-item-row');
   if (remaining.length === 0) {
     document.getElementById('f-inspection-items-empty').style.display = '';
-    document.getElementById('device-items-header').style.display = 'none';
+    document.getElementById('device-items-table').style.display = 'none';
   }
 }
+
 
 function saveDevice() {
   const vals = {};

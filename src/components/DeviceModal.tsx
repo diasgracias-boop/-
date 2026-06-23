@@ -405,59 +405,62 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                     + 項目を追加
                   </button>
                 </div>
-                {inspectionItems.length > 0 && (
-                  <div className="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-2">
-                    <div className="col-span-6">点検項目</div>
-                    <div className="col-span-3">下限</div>
-                    <div className="col-span-2">上限</div>
-                    <div className="col-span-1"></div>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  {inspectionItems.map((item, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-6">
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, name: e.target.value } : it))}
-                          placeholder="項目名"
-                          className={inputCls}
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <input
-                          type="number"
-                          value={item.lowerLimit}
-                          onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, lowerLimit: e.target.value } : it))}
-                          placeholder="下限"
-                          step="any"
-                          className={inputCls}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <input
-                          type="number"
-                          value={item.upperLimit}
-                          onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, upperLimit: e.target.value } : it))}
-                          placeholder="上限"
-                          step="any"
-                          className={inputCls}
-                        />
-                      </div>
-                      <div className="col-span-1 flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setInspectionItems((prev) => prev.filter((_, i) => i !== index))}
-                          className="text-gray-400 hover:text-red-500 text-lg leading-none"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {inspectionItems.length === 0 && (
+                {inspectionItems.length > 0 ? (
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="text-xs text-gray-500 font-medium border-b border-gray-200">
+                        <th className="text-left pb-1.5">点検項目</th>
+                        <th className="text-center pb-1.5 w-24">下限</th>
+                        <th className="text-center pb-1.5 w-24">上限</th>
+                        <th className="w-6"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {inspectionItems.map((item, index) => (
+                        <tr key={index}>
+                          <td className="py-1 pr-2">
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, name: e.target.value } : it))}
+                              placeholder="項目名"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="py-1 px-1">
+                            <input
+                              type="number"
+                              value={item.lowerLimit}
+                              onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, lowerLimit: e.target.value } : it))}
+                              placeholder="—"
+                              step="any"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="py-1 px-1">
+                            <input
+                              type="number"
+                              value={item.upperLimit}
+                              onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, upperLimit: e.target.value } : it))}
+                              placeholder="—"
+                              step="any"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="py-1 pl-1 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setInspectionItems((prev) => prev.filter((_, i) => i !== index))}
+                              className="text-gray-400 hover:text-red-500 text-lg leading-none"
+                            >
+                              ×
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
                   <p className="text-xs text-gray-400">点検項目がありません。「+ 項目を追加」で追加してください。</p>
                 )}
               </div>
