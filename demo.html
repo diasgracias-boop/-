@@ -3320,33 +3320,36 @@ function scSearchInput() {
   if (!q) { cand.classList.add('hidden'); return; }
 
   const cleanDevices = db.devices.filter(d => d.isCleanField && d.status !== 'RETIRED');
-  const matches = cleanDevices.filter(d =>
-    !scSelected.some(s => s.deviceId === d.id) &&
-    (d.name.includes(q) || d.deviceCode.includes(q))
-  );
+  const allMatches = cleanDevices.filter(d => d.name.includes(q) || d.deviceCode.includes(q));
 
   cand.classList.remove('hidden');
-  if (matches.length === 0) {
+  if (allMatches.length === 0) {
     cand.innerHTML = '<div class="px-3 py-3 text-sm text-gray-400">該当なし</div>';
   } else {
-    cand.innerHTML = matches.map(d => `
-      <label class="flex items-center gap-2 px-3 py-2 hover:bg-teal-50 cursor-pointer border-b border-gray-100" style="border-bottom:1px solid #f3f4f6">
-        <input type="checkbox" onchange="scAddDevice('${d.id}')" class="w-4 h-4" style="accent-color:#0d9488">
+    {
+    cand.innerHTML = allMatches.map(d => {
+      const isSelected = scSelected.some(s => s.deviceId === d.id);
+      return `<label class="flex items-center gap-2 px-3 py-2 cursor-pointer border-b border-gray-100 ${isSelected ? 'bg-teal-50' : 'hover:bg-teal-50'}" style="border-bottom:1px solid #f3f4f6">
+        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="scAddDevice('${d.id}', this.checked)" class="w-4 h-4" style="accent-color:#0d9488">
         <div style="min-width:0">
           <div class="text-sm font-medium text-gray-900" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name}</div>
           <div class="text-xs text-gray-400" style="font-family:monospace">${d.deviceCode}</div>
         </div>
-      </label>`).join('');
+      </label>`;
+    }).join('');
   }
 }
 
-function scAddDevice(deviceId) {
+function scAddDevice(deviceId, checked) {
   const d = db.devices.find(x => x.id === deviceId);
-  if (!d || scSelected.some(s => s.deviceId === deviceId)) return;
-  scSelected.push({ deviceId, name: d.name, deviceCode: d.deviceCode, category: d.cleanFieldCategory || '', inspectedBy: '', inspectedAt: null, rowChecked: false });
-  document.getElementById('sc-search').value = '';
-  document.getElementById('sc-candidates').classList.add('hidden');
-  document.getElementById('sc-clear-btn').classList.add('hidden');
+  if (!d) return;
+  if (checked && !scSelected.some(s => s.deviceId === deviceId)) {
+    scSelected.push({ deviceId, name: d.name, deviceCode: d.deviceCode, category: d.cleanFieldCategory || '', inspectedBy: '', inspectedAt: null, rowChecked: false });
+  } else if (!checked) {
+    scSelected = scSelected.filter(s => s.deviceId !== deviceId);
+  }
+  // re-render candidates to reflect checked state without closing
+  scSearchInput();
   renderSterilizationList();
 }
 

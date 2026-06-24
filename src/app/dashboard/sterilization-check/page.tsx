@@ -71,23 +71,19 @@ export default function SterilizationCheckPage() {
   }, []);
 
   const candidates = searchQuery.trim()
-    ? devices.filter(
-        (d) =>
-          !selected.some((s) => s.deviceId === d.id) &&
-          (d.name.includes(searchQuery) || d.deviceCode.includes(searchQuery))
-      )
+    ? devices.filter((d) => d.name.includes(searchQuery) || d.deviceCode.includes(searchQuery))
     : [];
 
-  function addDevice(d: Device) {
-    setSelected((prev) => [
-      ...prev,
-      {
-        deviceId: d.id, name: d.name, deviceCode: d.deviceCode,
-        category: d.cleanFieldCategory, inspectedBy: "", inspectedAt: null, rowChecked: false,
-      },
-    ]);
-    setSearchQuery("");
-    setShowCandidates(false);
+  function toggleCandidate(d: Device, checked: boolean) {
+    if (checked) {
+      setSelected((prev) =>
+        prev.some((s) => s.deviceId === d.id)
+          ? prev
+          : [...prev, { deviceId: d.id, name: d.name, deviceCode: d.deviceCode, category: d.cleanFieldCategory, inspectedBy: "", inspectedAt: null, rowChecked: false }]
+      );
+    } else {
+      setSelected((prev) => prev.filter((s) => s.deviceId !== d.id));
+    }
   }
 
   function removeDevice(deviceId: string) {
@@ -210,19 +206,23 @@ export default function SterilizationCheckPage() {
                 {candidates.length === 0 ? (
                   <div className="px-3 py-3 text-sm text-gray-400">該当なし</div>
                 ) : (
-                  candidates.map((d) => (
-                    <label key={d.id} className="flex items-center gap-2 px-3 py-2 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-0">
-                      <input
-                        type="checkbox"
-                        onChange={() => addDevice(d)}
-                        className="w-4 h-4 accent-teal-600"
-                      />
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">{d.name}</div>
-                        <div className="text-xs text-gray-400 font-mono">{d.deviceCode}</div>
-                      </div>
-                    </label>
-                  ))
+                  candidates.map((d) => {
+                    const isSelected = selected.some((s) => s.deviceId === d.id);
+                    return (
+                      <label key={d.id} className={`flex items-center gap-2 px-3 py-2 cursor-pointer border-b border-gray-100 last:border-0 ${isSelected ? "bg-teal-50" : "hover:bg-teal-50"}`}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => toggleCandidate(d, e.target.checked)}
+                          className="w-4 h-4 accent-teal-600"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">{d.name}</div>
+                          <div className="text-xs text-gray-400 font-mono">{d.deviceCode}</div>
+                        </div>
+                      </label>
+                    );
+                  })
                 )}
               </div>
             )}
