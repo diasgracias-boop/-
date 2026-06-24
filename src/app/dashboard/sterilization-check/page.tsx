@@ -124,7 +124,10 @@ export default function SterilizationCheckPage() {
   }
 
   const filteredRecords = records.filter((r) => {
-    if (histDateFilter && !r.inspectedAt.startsWith(histDateFilter)) return false;
+    if (histDateFilter) {
+      const { date: gDate } = parseGroup(r);
+      if (gDate !== histDateFilter) return false;
+    }
     if (histJudgment && r.judgment !== histJudgment) return false;
     if (histSearch) {
       const q = histSearch.toLowerCase();
@@ -210,26 +213,37 @@ export default function SterilizationCheckPage() {
     const toSave = selected.filter((s) => s.inspectedBy);
     if (toSave.length === 0) return;
     setSaving(true);
-    await Promise.all(
-      toSave.map((s) =>
-        fetch("/api/sterilization-checks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            deviceId: s.deviceId,
-            inspectedBy: s.inspectedBy,
-            judgment: s.judgment,
-            notes: `${date} ${timeSlot}`,
-            inspectedAt: s.inspectedAt ?? `${date}T00:00`,
-          }),
-        })
-      )
-    );
-    setSaving(false);
-    setSelected((prev) => prev.filter((s) => !s.inspectedBy));
-    await loadHistory();
-    setActiveTab("history");
-  }, [selected, date, timeSlot]);
+    setSavedMsg("");
+    try {
+      const results = await Promise.all(
+        toSave.map((s) =>
+          fetch("/api/sterilization-checks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              deviceId: s.deviceId,
+              inspectedBy: s.inspectedBy,
+              judgment: s.judgment,
+              notes: `${date} ${timeSlot}`,
+              inspectedAt: s.inspectedAt ?? `${date}T00:00`,
+            }),
+          })
+        )
+      );
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) {
+        setSavedMsg(`エラー: ${failed.length}件の登録に失敗しました`);
+        return;
+      }
+      setSelected((prev) => prev.filter((s) => !s.inspectedBy));
+      await loadHistory();
+      setActiveTab("history");
+    } catch (e) {
+      setSavedMsg("通信エラーが発生しました");
+    } finally {
+      setSaving(false);
+    }
+  }, [selected, date, timeSlot, loadHistory]);
 
   function openEdit(r: CheckRecord) {
     setEditRecord(r);
@@ -298,6 +312,7 @@ export default function SterilizationCheckPage() {
               >
                 {saving ? "登録中..." : "登録"}
               </button>
+              {savedMsg && <span className="text-sm text-red-600">{savedMsg}</span>}
             </div>
           )}
           {/* Controls: history */}

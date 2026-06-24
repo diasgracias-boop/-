@@ -3547,7 +3547,7 @@ function renderScHistory() {
 
   let records = [...db.sterilizationChecks];
 
-  if (dateFilter) records = records.filter(r => r.inspectedAt && r.inspectedAt.startsWith(dateFilter));
+  if (dateFilter) records = records.filter(r => scParseGroup(r).date === dateFilter);
   if (judgmentFilter) records = records.filter(r => r.judgment === judgmentFilter);
   if (searchFilter) {
     records = records.filter(r => {
