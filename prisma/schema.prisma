@@ -74,6 +74,18 @@ model Device {
   repairLogs          RepairLog[]
   inspectionSchedules InspectionSchedule[]
   inspectionItems     DeviceInspectionItem[]
+  sterilizationChecks SterilizationCheck[]
+}
+
+model SterilizationCheck {
+  id          String   @id @default(cuid())
+  deviceId    String
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  inspectedBy String
+  judgment    String
+  notes       String?
+  inspectedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 }
 
 model InspectionTemplate {

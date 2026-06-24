@@ -333,6 +333,10 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
         修理・故障履歴
       </button>
+      <button onclick="showPage('sterilization-check')" id="nav-sterilization-check" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+        滅菌前点検
+      </button>
       <button onclick="showPage('clean-field')" id="nav-clean-field" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
         清潔野機器一覧
@@ -502,6 +506,46 @@
       </div>
     </div>
 
+    <!-- 滅菌前点検 -->
+    <div id="page-sterilization-check" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">滅菌前点検</h1>
+          <p class="text-sm text-gray-500 mt-0.5">清潔野機器の滅菌前点検記録</p>
+        </div>
+        <button onclick="openSterilizationModal()" class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">+ 点検を登録</button>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mb-5">
+        <div class="bg-gray-50 rounded-xl border border-gray-100 px-5 py-4"><p class="text-xs text-gray-500 mb-1">総点検数</p><p id="sc-total" class="text-2xl font-bold text-gray-800">0</p></div>
+        <div class="bg-green-50 rounded-xl border border-gray-100 px-5 py-4"><p class="text-xs text-gray-500 mb-1">OK</p><p id="sc-ok" class="text-2xl font-bold text-green-700">0</p></div>
+        <div class="bg-red-50 rounded-xl border border-gray-100 px-5 py-4"><p class="text-xs text-gray-500 mb-1">NG</p><p id="sc-ng" class="text-2xl font-bold text-red-700">0</p></div>
+      </div>
+      <div class="flex gap-3 mb-4">
+        <input type="text" id="sc-filter-name" oninput="renderSterilizationList()" placeholder="機器名で絞り込み" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 w-56">
+        <div class="flex gap-1.5">
+          <button onclick="scSetFilter('')" id="sc-f-all" class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-700 text-white">すべて</button>
+          <button onclick="scSetFilter('OK')" id="sc-f-ok" class="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-gray-300 text-gray-600 hover:bg-gray-50">OK</button>
+          <button onclick="scSetFilter('NG')" id="sc-f-ng" class="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-gray-300 text-gray-600 hover:bg-gray-50">NG</button>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table id="sc-table" class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">点検日時</th>
+              <th class="px-4 py-3">機器名</th>
+              <th class="px-4 py-3">カテゴリ</th>
+              <th class="px-4 py-3">点検者</th>
+              <th class="px-4 py-3 text-center">判定</th>
+              <th class="px-4 py-3">備考</th>
+            </tr>
+          </thead>
+          <tbody id="sc-tbody" class="divide-y divide-gray-100"></tbody>
+        </table>
+        <div id="sc-empty" class="hidden p-8 text-center text-gray-400">点検記録がありません</div>
+      </div>
+    </div>
+
     <!-- 清潔野機器一覧 -->
     <div id="page-clean-field" class="hidden p-4">
       <div class="flex items-center justify-between mb-3">
@@ -518,6 +562,53 @@
 </div>
 
 <!-- ==================== モーダル ==================== -->
+
+<!-- 滅菌前点検登録モーダル -->
+<div id="modal-sterilization" class="hidden modal-overlay">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+      <h2 class="text-base font-semibold text-gray-900">滅菌前点検を登録</h2>
+      <button onclick="closeModal('modal-sterilization')" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div id="sc-error" class="hidden text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">点検日時 <span class="text-red-500">*</span></label>
+        <input type="datetime-local" id="sc-datetime" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">機器名 <span class="text-red-500">*</span></label>
+        <select id="sc-device-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <option value="">選択してください</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">点検者 <span class="text-red-500">*</span></label>
+        <select id="sc-inspector-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <option value="">選択してください</option>
+          <option>ME1</option><option>ME2</option><option>ME3</option><option>ME4</option><option>ME5</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">判定 <span class="text-red-500">*</span></label>
+        <div class="flex gap-3">
+          <button id="sc-btn-OK" type="button" onclick="scSetJudgment('OK')" class="flex-1 py-3 rounded-lg text-sm font-bold border-2 transition-colors border-green-300 text-green-600 hover:bg-green-50">OK</button>
+          <button id="sc-btn-NG" type="button" onclick="scSetJudgment('NG')" class="flex-1 py-3 rounded-lg text-sm font-bold border-2 transition-colors border-red-300 text-red-600 hover:bg-red-50">NG</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">備考</label>
+        <textarea id="sc-notes" rows="2" placeholder="特記事項があれば入力" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button onclick="closeModal('modal-sterilization')" class="flex-1 border border-gray-300 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">キャンセル</button>
+        <button onclick="submitSterilizationCheck()" class="flex-1 bg-teal-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-teal-700">登録</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- 機器登録モーダル -->
 <div id="modal-device" class="hidden modal-overlay">
@@ -1319,6 +1410,13 @@ let db = {
   repairLogs: [
     { id: 'r1', deviceId: 'd3', reportedBy: '看護師 田中', reportedAt: '2026-05-10', symptom: '表示画面が点灯しない、アラーム音が鳴らない', cause: '', action: '', status: 'OPEN', cost: null, vendor: 'フクダ電子サービス' },
   ],
+  sterilizationChecks: [
+    { id: 'sc1', deviceId: 'cf01', inspectedBy: 'ME1', judgment: 'OK', notes: '異常なし', inspectedAt: '2026-06-24T08:30' },
+    { id: 'sc2', deviceId: 'cf02', inspectedBy: 'ME2', judgment: 'OK', notes: null, inspectedAt: '2026-06-24T08:35' },
+    { id: 'sc3', deviceId: 'cf03', inspectedBy: 'ME1', judgment: 'NG', notes: 'パッケージに破損あり', inspectedAt: '2026-06-24T08:40' },
+    { id: 'sc4', deviceId: 'cf04', inspectedBy: 'ME3', judgment: 'OK', notes: null, inspectedAt: '2026-06-23T14:00' },
+    { id: 'sc5', deviceId: 'cf05', inspectedBy: 'ME2', judgment: 'OK', notes: null, inspectedAt: '2026-06-23T14:10' },
+  ],
 };
 
 let currentInspectionFilter = 'upcoming';
@@ -1384,7 +1482,7 @@ document.getElementById('login-password').addEventListener('keydown', e => { if 
 
 // ==================== ナビゲーション ====================
 function showPage(name) {
-  ['dashboard','devices','inspections','maintenance','repairs','clean-field'].forEach(p => {
+  ['dashboard','devices','inspections','maintenance','repairs','sterilization-check','clean-field'].forEach(p => {
     document.getElementById('page-' + p).classList.add('hidden');
     const nav = document.getElementById('nav-' + p);
     if (nav) nav.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left text-gray-600 hover:bg-gray-50';
@@ -1397,6 +1495,7 @@ function showPage(name) {
   if (name === 'inspections')  renderInspections();
   if (name === 'maintenance')  renderMaintenance();
   if (name === 'repairs')      renderRepairs();
+  if (name === 'sterilization-check') renderSterilizationList();
   if (name === 'clean-field')  renderCleanField();
 }
 
@@ -3140,6 +3239,125 @@ function bulkSetAllOk(entryIdx) {
   const s = db.inspections.find(i => i.id === bulkEntries[entryIdx].scheduleId);
   if (s?.items) s.items.forEach(it => { if (!it.judgment) it.judgment = 'OK'; });
   renderBulkEntries();
+}
+
+// ==================== 滅菌前点検 ====================
+let scJudgmentFilter = '';
+
+function scSetFilter(val) {
+  scJudgmentFilter = val;
+  ['all','ok','ng'].forEach(k => {
+    const el = document.getElementById('sc-f-' + k);
+    if (!el) return;
+    const isActive = (val === '' && k === 'all') || val.toLowerCase() === k;
+    if (isActive) {
+      el.className = `px-3 py-1.5 rounded-full text-xs font-medium ${k === 'ok' ? 'bg-green-500 text-white' : k === 'ng' ? 'bg-red-500 text-white' : 'bg-gray-700 text-white'}`;
+    } else {
+      el.className = 'px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-gray-300 text-gray-600 hover:bg-gray-50';
+    }
+  });
+  renderSterilizationList();
+}
+
+function renderSterilizationList() {
+  const nameQ = (document.getElementById('sc-filter-name')?.value ?? '').trim();
+  const all = db.sterilizationChecks;
+  document.getElementById('sc-total').textContent = all.length;
+  document.getElementById('sc-ok').textContent = all.filter(c => c.judgment === 'OK').length;
+  document.getElementById('sc-ng').textContent = all.filter(c => c.judgment === 'NG').length;
+
+  let filtered = [...all].sort((a, b) => b.inspectedAt.localeCompare(a.inspectedAt));
+  if (scJudgmentFilter) filtered = filtered.filter(c => c.judgment === scJudgmentFilter);
+  if (nameQ) filtered = filtered.filter(c => {
+    const dev = db.devices.find(d => d.id === c.deviceId);
+    return dev && (dev.name.includes(nameQ) || dev.deviceCode.includes(nameQ));
+  });
+
+  const tbody = document.getElementById('sc-tbody');
+  const empty = document.getElementById('sc-empty');
+  const table = document.getElementById('sc-table');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    if (table) table.classList.add('hidden');
+    if (empty) empty.classList.remove('hidden');
+  } else {
+    if (table) table.classList.remove('hidden');
+    if (empty) empty.classList.add('hidden');
+    tbody.innerHTML = filtered.map(c => {
+      const dev = db.devices.find(d => d.id === c.deviceId);
+      const jBg = c.judgment === 'OK' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+      const dt = new Date(c.inspectedAt).toLocaleString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `<tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">${dt}</td>
+        <td class="px-4 py-3 font-medium text-gray-900">
+          <div>${dev?.name ?? '—'}</div>
+          <div class="text-xs text-gray-400 font-mono">${dev?.deviceCode ?? ''}</div>
+        </td>
+        <td class="px-4 py-3 text-xs text-gray-500">${dev?.cleanFieldCategory ?? '—'}</td>
+        <td class="px-4 py-3 text-gray-700">${c.inspectedBy}</td>
+        <td class="px-4 py-3 text-center"><span class="inline-block text-xs font-bold px-3 py-1 rounded-full ${jBg}">${c.judgment}</span></td>
+        <td class="px-4 py-3 text-xs text-gray-500">${c.notes ?? '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function openSterilizationModal() {
+  const modal = document.getElementById('modal-sterilization');
+  // populate device select grouped by category
+  const cleanDevices = db.devices.filter(d => d.isCleanField && d.status !== 'RETIRED');
+  const catMap = {};
+  cleanDevices.forEach(d => {
+    const key = d.cleanFieldCategory || '（未分類）';
+    if (!catMap[key]) catMap[key] = [];
+    catMap[key].push(d);
+  });
+  const cats = Object.keys(catMap).sort((a, b) => a === '（未分類）' ? 1 : b === '（未分類）' ? -1 : a.localeCompare(b, 'ja'));
+  const sel = document.getElementById('sc-device-select');
+  sel.innerHTML = '<option value="">選択してください</option>' + cats.map(cat =>
+    `<optgroup label="${cat}">${catMap[cat].map(d => `<option value="${d.id}">${d.name}</option>`).join('')}</optgroup>`
+  ).join('');
+  // reset form
+  document.getElementById('sc-device-select').value = '';
+  document.getElementById('sc-inspector-select').value = '';
+  document.getElementById('sc-notes').value = '';
+  document.getElementById('sc-error').classList.add('hidden');
+  scSetJudgment('');
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('sc-datetime').value = now.toISOString().slice(0,16);
+  modal.classList.remove('hidden');
+}
+
+let scJudgment = '';
+function scSetJudgment(val) {
+  scJudgment = val;
+  ['OK','NG'].forEach(j => {
+    const btn = document.getElementById('sc-btn-' + j);
+    if (!btn) return;
+    if (val === j) {
+      btn.className = `flex-1 py-3 rounded-lg text-sm font-bold border-2 transition-colors ${j === 'OK' ? 'bg-green-500 border-green-500 text-white' : 'bg-red-500 border-red-500 text-white'}`;
+    } else {
+      btn.className = `flex-1 py-3 rounded-lg text-sm font-bold border-2 transition-colors ${j === 'OK' ? 'border-green-300 text-green-600 hover:bg-green-50' : 'border-red-300 text-red-600 hover:bg-red-50'}`;
+    }
+  });
+}
+
+function submitSterilizationCheck() {
+  const deviceId = document.getElementById('sc-device-select').value;
+  const inspectedBy = document.getElementById('sc-inspector-select').value;
+  const inspectedAt = document.getElementById('sc-datetime').value;
+  const notes = document.getElementById('sc-notes').value.trim();
+  const errEl = document.getElementById('sc-error');
+  if (!deviceId || !inspectedBy || !scJudgment) {
+    errEl.textContent = '必須項目を入力してください';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
+  db.sterilizationChecks.push({ id: uid(), deviceId, inspectedBy, judgment: scJudgment, notes: notes || null, inspectedAt });
+  closeModal('modal-sterilization');
+  renderSterilizationList();
 }
 
 function submitBulkInspection() {
