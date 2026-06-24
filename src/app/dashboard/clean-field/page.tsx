@@ -4,35 +4,52 @@ import { useEffect, useState } from "react";
 
 interface CleanFieldDevice {
   id: string;
-  deviceCode: string;
   name: string;
-  category: string;
   cleanFieldCategory: string | null;
   cleanFieldDefaultCount: number | null;
   cleanFieldCurrentCount: number | null;
   cleanFieldSubstituteCount: number | null;
-  manufacturer: string;
-  model: string;
-  location: string;
-  department: string | null;
-  status: string;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVE: "稼働中",
-  MAINTENANCE: "点検中",
-  REPAIR: "修理中",
-  RETIRED: "廃棄",
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "bg-green-100 text-green-700",
-  MAINTENANCE: "bg-yellow-100 text-yellow-700",
-  REPAIR: "bg-red-100 text-red-700",
-  RETIRED: "bg-gray-100 text-gray-500",
-};
+interface DeviceGroup {
+  baseName: string;
+  defaultCount: number | null;
+  currentCount: number | null;
+  substituteCount: number | null;
+}
 
 const UNCATEGORIZED = "（未分類）";
+
+// Strip trailing circled numbers ①②③... and whitespace
+function baseName(name: string): string {
+  return name.replace(/[\s①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]+$/, "").trim();
+}
+
+function sumNullable(a: number | null, b: number | null): number | null {
+  if (a == null && b == null) return null;
+  return (a ?? 0) + (b ?? 0);
+}
+
+function groupDevices(devices: CleanFieldDevice[]): DeviceGroup[] {
+  const map = new Map<string, DeviceGroup>();
+  for (const d of devices) {
+    const key = baseName(d.name);
+    const existing = map.get(key);
+    if (existing) {
+      existing.defaultCount = sumNullable(existing.defaultCount, d.cleanFieldDefaultCount);
+      existing.currentCount = sumNullable(existing.currentCount, d.cleanFieldCurrentCount);
+      existing.substituteCount = sumNullable(existing.substituteCount, d.cleanFieldSubstituteCount);
+    } else {
+      map.set(key, {
+        baseName: key,
+        defaultCount: d.cleanFieldDefaultCount,
+        currentCount: d.cleanFieldCurrentCount,
+        substituteCount: d.cleanFieldSubstituteCount,
+      });
+    }
+  }
+  return Array.from(map.values());
+}
 
 export default function CleanFieldPage() {
   const [devices, setDevices] = useState<CleanFieldDevice[]>([]);
@@ -44,15 +61,15 @@ export default function CleanFieldPage() {
       .then((data) => { setDevices(data); setLoading(false); });
   }, []);
 
-  // Group by cleanFieldCategory
-  const groups = devices.reduce<Record<string, CleanFieldDevice[]>>((acc, d) => {
+  // Group by cleanFieldCategory, then by baseName within each category
+  const catMap = devices.reduce<Record<string, CleanFieldDevice[]>>((acc, d) => {
     const key = d.cleanFieldCategory || UNCATEGORIZED;
     if (!acc[key]) acc[key] = [];
     acc[key].push(d);
     return acc;
   }, {});
 
-  const sortedKeys = Object.keys(groups).sort((a, b) => {
+  const sortedCats = Object.keys(catMap).sort((a, b) => {
     if (a === UNCATEGORIZED) return 1;
     if (b === UNCATEGORIZED) return -1;
     return a.localeCompare(b, "ja");
@@ -84,63 +101,51 @@ export default function CleanFieldPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {sortedKeys.map((cat) => (
-            <div key={cat} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="bg-teal-50 border-b border-teal-100 px-5 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-teal-500 rounded-full" />
-                  <h2 className="text-sm font-semibold text-teal-800">
-                    {cat}
-                  </h2>
+          {sortedCats.map((cat) => {
+            const rows = groupDevices(catMap[cat]);
+            return (
+              <div key={cat} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-teal-50 border-b border-teal-100 px-5 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-teal-500 rounded-full" />
+                    <h2 className="text-sm font-semibold text-teal-800">{cat}</h2>
+                  </div>
+                  <span className="text-xs text-teal-600 font-medium">{catMap[cat].length} 台</span>
                 </div>
-                <span className="text-xs text-teal-600 font-medium">{groups[cat].length} 台</span>
-              </div>
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr className="text-xs text-gray-500 text-left">
-                    <th className="px-4 py-2.5">管理番号</th>
-                    <th className="px-4 py-2.5">機器名</th>
-                    <th className="px-4 py-2.5 text-center">既定定数</th>
-                    <th className="px-4 py-2.5 text-center">現在定数</th>
-                    <th className="px-4 py-2.5 text-center">代品数</th>
-                    <th className="px-4 py-2.5">配備部署</th>
-                    <th className="px-4 py-2.5">設置場所</th>
-                    <th className="px-4 py-2.5">状態</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {groups[cat].map((d) => (
-                    <tr key={d.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{d.deviceCode}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{d.name}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-sm font-medium text-gray-700">{d.cleanFieldDefaultCount ?? "—"}</span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {d.cleanFieldCurrentCount != null && d.cleanFieldDefaultCount != null ? (
-                          <span className={`text-sm font-medium ${d.cleanFieldCurrentCount < d.cleanFieldDefaultCount ? "text-red-600" : "text-gray-700"}`}>
-                            {d.cleanFieldCurrentCount}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-gray-700">{d.cleanFieldCurrentCount ?? "—"}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-sm text-gray-600">{d.cleanFieldSubstituteCount ?? "—"}</span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{d.department ?? "—"}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{d.location}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[d.status] ?? "bg-gray-100 text-gray-500"}`}>
-                          {STATUS_LABEL[d.status] ?? d.status}
-                        </span>
-                      </td>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr className="text-xs text-gray-500 text-left">
+                      <th className="px-4 py-2.5">機器名</th>
+                      <th className="px-4 py-2.5 text-center">既定定数</th>
+                      <th className="px-4 py-2.5 text-center">現在定数</th>
+                      <th className="px-4 py-2.5 text-center">代品数</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {rows.map((row) => {
+                      const shortage = row.currentCount != null && row.defaultCount != null && row.currentCount < row.defaultCount;
+                      return (
+                        <tr key={row.baseName} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-gray-900">{row.baseName}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-sm font-medium text-gray-700">{row.defaultCount ?? "—"}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`text-sm font-medium ${shortage ? "text-red-600" : "text-gray-700"}`}>
+                              {row.currentCount ?? "—"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-sm text-gray-600">{row.substituteCount ?? "—"}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
