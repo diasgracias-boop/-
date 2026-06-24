@@ -511,19 +511,39 @@
       <!-- Header bar -->
       <div class="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0">
         <h1 class="text-lg font-bold text-gray-900" style="margin-right:0.5rem">滅菌前点検</h1>
-        <input type="date" id="sc-date" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-        <select id="sc-timeslot" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-          <option>午前（第1回）</option>
-          <option>午前（第2回）</option>
-          <option>午後（第1回）</option>
-          <option>午後（第2回）</option>
-          <option>夜間</option>
-        </select>
-        <button onclick="scRegister()" id="sc-register-btn" class="bg-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors" style="opacity:0.4;pointer-events:none">登録</button>
-        <span id="sc-saved-msg" class="hidden text-sm text-teal-700 font-medium"></span>
+        <!-- タブ -->
+        <div class="flex border border-gray-200 rounded-lg overflow-hidden text-sm font-medium" style="margin-right:auto">
+          <button id="sc-tab-new-btn" onclick="scShowTab('new')" class="px-4 py-1.5 bg-teal-600 text-white transition-colors">新規登録</button>
+          <button id="sc-tab-hist-btn" onclick="scShowTab('history')" class="px-4 py-1.5 bg-white text-gray-600 hover:bg-gray-50 transition-colors">点検記録</button>
+        </div>
+        <!-- 新規登録タブ用コントロール -->
+        <div id="sc-new-controls" class="flex items-center gap-3">
+          <input type="date" id="sc-date" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+          <select id="sc-timeslot" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+            <option>午前（第1回）</option>
+            <option>午前（第2回）</option>
+            <option>午後（第1回）</option>
+            <option>午後（第2回）</option>
+            <option>夜間</option>
+          </select>
+          <button onclick="scRegister()" id="sc-register-btn" class="bg-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors" style="opacity:0.4;pointer-events:none">登録</button>
+          <span id="sc-saved-msg" class="hidden text-sm text-teal-700 font-medium"></span>
+        </div>
+        <!-- 点検記録タブ用コントロール -->
+        <div id="sc-hist-controls" class="hidden flex items-center gap-2">
+          <input type="date" id="sc-hist-date" oninput="renderScHistory()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+          <input type="text" id="sc-hist-search" oninput="renderScHistory()" placeholder="機器名・点検者で検索" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm" style="width:14rem">
+          <select id="sc-hist-judgment" onchange="renderScHistory()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+            <option value="">判定：すべて</option>
+            <option value="OK">OK</option>
+            <option value="NG">NG</option>
+          </select>
+          <button onclick="scHistClear()" class="text-sm text-gray-400 hover:text-gray-600 px-2">クリア</button>
+        </div>
       </div>
-      <!-- Body: left search + right list -->
-      <div class="flex flex-1 overflow-hidden">
+
+      <!-- 新規登録パネル -->
+      <div id="sc-panel-new" class="flex flex-1 overflow-hidden">
         <!-- Left: search -->
         <div class="flex flex-col p-4 gap-3 bg-white border-r border-gray-200 flex-shrink-0" style="width:17rem">
           <p class="text-xs font-semibold text-gray-500" style="text-transform:uppercase;letter-spacing:.05em">機器を追加</p>
@@ -568,6 +588,25 @@
           </div>
         </div>
       </div>
+
+      <!-- 点検記録パネル -->
+      <div id="sc-panel-history" class="hidden flex-1 overflow-y-auto">
+        <table class="w-full text-sm bg-white">
+          <thead class="bg-gray-50 border-b border-gray-200" style="position:sticky;top:0">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-2" style="width:10rem">点検日時</th>
+              <th class="px-4 py-2">機器名</th>
+              <th class="px-4 py-2" style="width:9rem">点検者</th>
+              <th class="px-4 py-2 text-center" style="width:4rem">CE</th>
+              <th class="px-4 py-2 text-center" style="width:4rem">判定</th>
+              <th class="px-4 py-2" style="width:14rem">備考</th>
+              <th class="px-4 py-2" style="width:5rem"></th>
+            </tr>
+          </thead>
+          <tbody id="sc-hist-tbody" class="divide-y divide-gray-100"></tbody>
+        </table>
+        <div id="sc-hist-empty" class="hidden flex items-center justify-center text-gray-400 text-sm" style="height:8rem">記録がありません</div>
+      </div>
     </div>
 
     <!-- 清潔野機器一覧 -->
@@ -586,6 +625,55 @@
 </div>
 
 <!-- ==================== モーダル ==================== -->
+
+<!-- 滅菌前点検 編集モーダル -->
+<div id="modal-sc-edit" class="hidden modal-overlay" onclick="if(event.target===this)closeScEdit()">
+  <div class="bg-white rounded-2xl shadow-xl w-full mx-4" style="max-width:32rem">
+    <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">点検記録の編集</h2>
+      <button onclick="closeScEdit()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">機器名</label>
+        <div id="sc-edit-device-name" class="text-sm text-gray-900 font-medium py-1.5"></div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">点検日時</label>
+        <input type="datetime-local" id="sc-edit-inspectedAt" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">点検者</label>
+        <select id="sc-edit-inspector" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <option value="">—</option>
+          <option>ME1</option><option>ME2</option><option>ME3</option><option>ME4</option><option>ME5</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">判定</label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="radio" name="sc-edit-judgment" value="OK" class="accent-teal-600"> OK
+          </label>
+          <label class="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="radio" name="sc-edit-judgment" value="NG" class="accent-red-500"> NG
+          </label>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">備考</label>
+        <textarea id="sc-edit-notes" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" placeholder="備考を入力"></textarea>
+      </div>
+    </div>
+    <div class="p-6 pt-0 flex justify-between">
+      <button onclick="scDeleteRecord()" class="text-sm text-red-500 hover:text-red-700 font-medium px-2 py-1">削除</button>
+      <div class="flex gap-3">
+        <button onclick="closeScEdit()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">キャンセル</button>
+        <button onclick="scSaveEdit()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- 機器登録モーダル -->
 <div id="modal-device" class="hidden modal-overlay">
@@ -3384,6 +3472,128 @@ document.addEventListener('click', e => {
     if (cand) cand.classList.add('hidden');
   }
 });
+
+// ---- タブ切替 ----
+function scShowTab(tab) {
+  const isNew = tab === 'new';
+  document.getElementById('sc-panel-new').style.display = isNew ? 'flex' : 'none';
+  document.getElementById('sc-panel-history').style.display = isNew ? 'none' : 'flex';
+  document.getElementById('sc-new-controls').style.display = isNew ? 'flex' : 'none';
+  document.getElementById('sc-hist-controls').style.display = isNew ? 'none' : 'flex';
+  const activeBtn = 'bg-teal-600 text-white';
+  const inactiveBtn = 'bg-white text-gray-600 hover:bg-gray-50';
+  document.getElementById('sc-tab-new-btn').className = `px-4 py-1.5 transition-colors ${isNew ? activeBtn : inactiveBtn}`;
+  document.getElementById('sc-tab-hist-btn').className = `px-4 py-1.5 transition-colors ${!isNew ? activeBtn : inactiveBtn}`;
+  if (!isNew) renderScHistory();
+}
+
+// ---- 点検記録一覧 ----
+function renderScHistory() {
+  const dateFilter = document.getElementById('sc-hist-date').value;
+  const searchFilter = document.getElementById('sc-hist-search').value.trim().toLowerCase();
+  const judgmentFilter = document.getElementById('sc-hist-judgment').value;
+
+  let records = [...db.sterilizationChecks].sort((a, b) => b.inspectedAt.localeCompare(a.inspectedAt));
+
+  if (dateFilter) {
+    records = records.filter(r => r.inspectedAt && r.inspectedAt.startsWith(dateFilter));
+  }
+  if (judgmentFilter) {
+    records = records.filter(r => r.judgment === judgmentFilter);
+  }
+  if (searchFilter) {
+    records = records.filter(r => {
+      const dev = db.devices.find(d => d.id === r.deviceId);
+      const name = dev ? dev.name.toLowerCase() : '';
+      return name.includes(searchFilter) || (r.inspectedBy || '').toLowerCase().includes(searchFilter);
+    });
+  }
+
+  const tbody = document.getElementById('sc-hist-tbody');
+  const empty = document.getElementById('sc-hist-empty');
+  if (records.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  tbody.innerHTML = records.map(r => {
+    const dev = db.devices.find(d => d.id === r.deviceId);
+    const deviceName = dev ? dev.name : '（不明）';
+    const deviceCode = dev ? dev.deviceCode : '';
+    const dtStr = r.inspectedAt ? new Date(r.inspectedAt).toLocaleString('ja-JP', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+    const judgmentBadge = r.judgment === 'OK'
+      ? '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700">OK</span>'
+      : '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">NG</span>';
+    const hasInspector = !!r.inspectedBy;
+    const ceCk = `<input type="checkbox" ${hasInspector ? 'checked' : ''} class="w-4 h-4 cursor-default" style="accent-color:#0d9488" onclick="return false">`;
+    return `<tr class="hover:bg-gray-50">
+      <td class="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">${dtStr}</td>
+      <td class="px-4 py-2">
+        <div class="font-medium text-gray-900 text-sm">${deviceName}</div>
+        <div class="text-xs text-gray-400 font-mono">${deviceCode}</div>
+      </td>
+      <td class="px-4 py-2 text-sm text-gray-700">${r.inspectedBy || '—'}</td>
+      <td class="px-4 py-2 text-center">${ceCk}</td>
+      <td class="px-4 py-2 text-center">${judgmentBadge}</td>
+      <td class="px-4 py-2 text-xs text-gray-500" style="max-width:14rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
+      <td class="px-4 py-2 text-right">
+        <button onclick="scOpenEdit('${r.id}')" class="text-xs text-teal-600 hover:text-teal-800 font-medium px-2 py-1 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors">編集</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function scHistClear() {
+  document.getElementById('sc-hist-date').value = '';
+  document.getElementById('sc-hist-search').value = '';
+  document.getElementById('sc-hist-judgment').value = '';
+  renderScHistory();
+}
+
+// ---- 点検記録編集 ----
+let scEditId = null;
+function scOpenEdit(id) {
+  const r = db.sterilizationChecks.find(x => x.id === id);
+  if (!r) return;
+  scEditId = id;
+  const dev = db.devices.find(d => d.id === r.deviceId);
+  document.getElementById('sc-edit-device-name').textContent = dev ? `${dev.name}（${dev.deviceCode}）` : '（不明）';
+  document.getElementById('sc-edit-inspectedAt').value = r.inspectedAt || '';
+  document.getElementById('sc-edit-inspector').value = r.inspectedBy || '';
+  document.querySelectorAll('input[name="sc-edit-judgment"]').forEach(el => { el.checked = el.value === r.judgment; });
+  document.getElementById('sc-edit-notes').value = r.notes || '';
+  document.getElementById('modal-sc-edit').classList.remove('hidden');
+}
+
+function closeScEdit() {
+  document.getElementById('modal-sc-edit').classList.add('hidden');
+  scEditId = null;
+}
+
+function scSaveEdit() {
+  if (!scEditId) return;
+  const idx = db.sterilizationChecks.findIndex(x => x.id === scEditId);
+  if (idx === -1) return;
+  const judgment = document.querySelector('input[name="sc-edit-judgment"]:checked');
+  db.sterilizationChecks[idx] = {
+    ...db.sterilizationChecks[idx],
+    inspectedAt: document.getElementById('sc-edit-inspectedAt').value || db.sterilizationChecks[idx].inspectedAt,
+    inspectedBy: document.getElementById('sc-edit-inspector').value,
+    judgment: judgment ? judgment.value : 'OK',
+    notes: document.getElementById('sc-edit-notes').value,
+  };
+  closeScEdit();
+  renderScHistory();
+}
+
+function scDeleteRecord() {
+  if (!scEditId) return;
+  if (!confirm('この点検記録を削除しますか？')) return;
+  db.sterilizationChecks = db.sterilizationChecks.filter(x => x.id !== scEditId);
+  closeScEdit();
+  renderScHistory();
+}
 
 function submitBulkInspection() {
   bulkColData.forEach(col => {
