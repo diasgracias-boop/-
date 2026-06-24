@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import InspectionModal from "@/components/InspectionModal";
 import InspectionCompleteModal from "@/components/InspectionCompleteModal";
+import BulkInspectionModal from "@/components/BulkInspectionModal";
 
 interface InspectionItem {
   id: string;
@@ -39,6 +40,7 @@ export default function InspectionsPage() {
   const [filter, setFilter] = useState(searchParams.get("overdue") === "true" ? "overdue" : "upcoming");
   const [showModal, setShowModal] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<Schedule | null>(null);
+  const [showBulkModal, setShowBulkModal] = useState(false);
 
   const fetchSchedules = useCallback(async () => {
     setLoading(true);
@@ -61,12 +63,20 @@ export default function InspectionsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">点検スケジュール</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          + 点検予定を追加
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            一括入力
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            + 点検予定を追加
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -165,6 +175,14 @@ export default function InspectionsPage() {
         <InspectionModal
           onClose={() => setShowModal(false)}
           onSaved={fetchSchedules}
+        />
+      )}
+
+      {showBulkModal && (
+        <BulkInspectionModal
+          schedules={schedules}
+          onClose={() => setShowBulkModal(false)}
+          onCompleted={fetchSchedules}
         />
       )}
 

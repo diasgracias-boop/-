@@ -431,7 +431,10 @@
     <div id="page-inspections" class="hidden p-6">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">点検スケジュール</h1>
-        <button onclick="openInspectionModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ 点検予定を追加</button>
+        <div class="flex gap-2">
+          <button onclick="openBulkInspectionModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">一括入力</button>
+          <button onclick="openInspectionModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ 点検予定を追加</button>
+        </div>
       </div>
       <div class="flex gap-2 mb-4" id="inspection-filter-btns">
         <button onclick="setInspectionFilter('upcoming')" data-filter="upcoming" class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">30日以内</button>
@@ -927,6 +930,39 @@
     <div class="flex gap-3 p-4 border-t border-gray-200 flex-shrink-0">
       <button onclick="saveInspectionComplete()" id="ic-save-btn" class="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-green-700">完了として保存</button>
       <button onclick="closeModal('modal-inspection-complete')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- 一括点検入力モーダル -->
+<div id="modal-bulk-inspection" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 flex flex-col" style="max-height:92vh">
+    <div class="p-5 border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900">一括点検入力</h2>
+          <p class="text-sm text-gray-500 mt-0.5" id="bulk-summary"></p>
+        </div>
+        <button onclick="closeModal('modal-bulk-inspection')" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="mt-3 flex items-end gap-3 p-3 bg-gray-50 rounded-xl">
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-gray-600 mb-1">共通の点検日</label>
+          <input type="date" id="bulk-common-date" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-gray-600 mb-1">共通の点検者</label>
+          <input type="text" id="bulk-common-by" placeholder="氏名・部署など" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <button type="button" onclick="bulkApplyCommon()" class="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg font-medium hover:bg-blue-700 whitespace-nowrap">全件に適用</button>
+      </div>
+    </div>
+    <div id="bulk-entries" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+    <div class="flex gap-3 p-4 border-t border-gray-200 flex-shrink-0">
+      <button type="button" onclick="submitBulkInspection()" id="bulk-save-btn" class="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-green-700 disabled:opacity-50">保存</button>
+      <button type="button" onclick="closeModal('modal-bulk-inspection')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
     </div>
   </div>
 </div>
@@ -2302,6 +2338,207 @@ function populateDeviceSelects() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = opts;
   });
+}
+
+// ========== 一括点検入力 ==========
+let bulkEntries = [];
+
+function openBulkInspectionModal() {
+  const now = new Date();
+  const activeSchedules = db.inspections.filter(s => !s.completed);
+  bulkEntries = activeSchedules.map(s => ({
+    scheduleId: s.id,
+    selected: true,
+    completedAt: now.toISOString().split('T')[0],
+    completedBy: '',
+    expanded: false,
+  }));
+  const dateInput = document.getElementById('bulk-common-date');
+  if (dateInput) dateInput.value = now.toISOString().split('T')[0];
+  const byInput = document.getElementById('bulk-common-by');
+  if (byInput) byInput.value = '';
+  renderBulkEntries();
+  document.getElementById('modal-bulk-inspection').classList.remove('hidden');
+}
+
+function renderBulkEntries() {
+  const container = document.getElementById('bulk-entries');
+  const summary = document.getElementById('bulk-summary');
+  const selectedCount = bulkEntries.filter(e => e.selected).length;
+  let ngTotal = 0;
+  bulkEntries.filter(e => e.selected).forEach(e => {
+    const s = db.inspections.find(i => i.id === e.scheduleId);
+    if (s?.items) ngTotal += s.items.filter(it => it.judgment === 'NG').length;
+  });
+  summary.textContent = `${bulkEntries.length}件の点検予定 ／ ${selectedCount}件選択中` + (ngTotal > 0 ? ` NG ${ngTotal}件` : '');
+
+  const BULK_CATS = ['外装・機能点検', '性能点検', '電気的安全性点検'];
+  container.innerHTML = bulkEntries.map((entry, idx) => {
+    const s = db.inspections.find(i => i.id === entry.scheduleId);
+    if (!s) return '';
+    const device = db.devices.find(d => d.id === s.deviceId);
+    const days = Math.ceil((new Date(s.scheduledAt).getTime() - Date.now()) / 86400000);
+    const isOverdue = days < 0;
+    const items = s.items ?? [];
+    const filledCount = items.filter(it => it.judgment).length;
+    const ngCount = items.filter(it => it.judgment === 'NG').length;
+    const borderClass = !entry.selected ? 'border-gray-200 opacity-50' : isOverdue ? 'border-red-300' : 'border-blue-200';
+    const daysBadge = isOverdue
+      ? `<span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-medium">${Math.abs(days)}日超過</span>`
+      : `<span class="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">あと${days}日</span>`;
+    let itemsHtml = '';
+    if (entry.expanded) {
+      if (items.length === 0) {
+        itemsHtml = '<p class="text-xs text-gray-400">点検項目がありません。</p>';
+      } else {
+        let lastCat = null;
+        let tbody = '';
+        items.forEach((item, mIdx) => {
+          const cat = item.category || '';
+          if (BULK_CATS.includes(cat) && cat !== lastCat) {
+            lastCat = cat;
+            tbody += `<tr class="bg-blue-50"><td colspan="5" class="px-2 py-1 text-xs font-semibold text-blue-700 border-t border-blue-100">${cat}</td></tr>`;
+          }
+          const isNg = item.judgment === 'NG', isOk = item.judgment === 'OK';
+          const rowBg = isNg ? 'bg-red-50' : isOk ? 'bg-green-50' : '';
+          const selClass = isOk ? 'border-green-400 bg-green-100 text-green-700' : isNg ? 'border-red-400 bg-red-100 text-red-700' : 'border-gray-300 text-gray-500';
+          tbody += `<tr class="border-t border-gray-100 ${rowBg}">
+            <td class="px-2 py-1 text-xs text-gray-800 font-medium">${item.name}</td>
+            <td class="px-2 py-1">
+              <select onchange="bulkSetJudgment(${idx},${mIdx},this.value)" class="w-full border rounded px-1 py-0.5 text-xs font-semibold text-center ${selClass}">
+                <option value="" ${!item.judgment?'selected':''}>—</option>
+                <option value="OK" ${item.judgment==='OK'?'selected':''}>OK</option>
+                <option value="NG" ${item.judgment==='NG'?'selected':''}>NG</option>
+              </select>
+            </td>
+            <td class="px-2 py-1">
+              <input type="number" value="${item.measuredValue??''}" step="any" placeholder="—"
+                onchange="bulkSetValue(${idx},${mIdx},this.value,${item.lowerLimit??'null'},${item.upperLimit??'null'})"
+                class="w-full border rounded px-1.5 py-0.5 text-xs text-center ${isNg?'border-red-300 bg-red-50':'border-gray-300'}" />
+            </td>
+            <td class="px-2 py-1 text-center text-gray-400 text-xs">${item.upperLimit??'—'}</td>
+            <td class="px-2 py-1 text-center text-gray-400 text-xs">${item.lowerLimit??'—'}</td>
+          </tr>`;
+        });
+        itemsHtml = `<table class="w-full text-sm border-collapse">
+          <thead><tr class="text-xs text-gray-500 font-medium border-b border-gray-200">
+            <th class="text-left px-2 py-1.5">点検項目</th>
+            <th class="text-center px-2 py-1.5 w-20">
+              <div class="flex items-center justify-center gap-1">判定
+                <button type="button" onclick="bulkSetAllOk(${idx})" class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium hover:bg-green-200">全OK</button>
+              </div>
+            </th>
+            <th class="text-center px-2 py-1.5 w-24">測定値</th>
+            <th class="text-center px-2 py-1.5 w-14">上限</th>
+            <th class="text-center px-2 py-1.5 w-14">下限</th>
+          </tr></thead><tbody>${tbody}</tbody></table>`;
+      }
+    }
+    return `<div class="border rounded-xl overflow-hidden transition-all ${borderClass}">
+      <div class="flex items-center gap-3 px-4 py-3 bg-gray-50">
+        <input type="checkbox" ${entry.selected?'checked':''} onchange="bulkToggleSelect(${idx},this.checked)" class="w-4 h-4 accent-blue-600 cursor-pointer flex-shrink-0" />
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm font-semibold text-gray-900">${device?.name??''}</span>
+            <span class="text-xs text-gray-400 font-mono">${device?.deviceCode??''}</span>
+            <span class="text-xs text-gray-500">${device?.location??''}</span>
+            ${daysBadge}
+          </div>
+          <div class="text-xs text-gray-500 mt-0.5">${s.description} ／ 予定日: ${new Date(s.scheduledAt).toLocaleDateString('ja-JP')} ／ ${items.length}項目</div>
+        </div>
+        ${entry.selected ? `<div class="text-xs text-gray-400 text-right flex-shrink-0">${filledCount}/${items.length}入力${ngCount>0?` <span class="text-red-600 font-medium">NG ${ngCount}</span>`:''}</div>` : ''}
+        <button type="button" onclick="bulkToggleExpand(${idx})" class="text-gray-400 hover:text-gray-600 ${entry.expanded?'rotate-180':''}">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+      </div>
+      ${entry.expanded ? `<div class="border-t border-gray-200 p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-medium text-gray-600 mb-1">点検日</label>
+            <input type="date" value="${entry.completedAt}" onchange="bulkUpdateEntry(${idx},'completedAt',this.value)" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm" /></div>
+          <div><label class="block text-xs font-medium text-gray-600 mb-1">点検者</label>
+            <input type="text" value="${entry.completedBy}" placeholder="氏名・部署など" onchange="bulkUpdateEntry(${idx},'completedBy',this.value)" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm" /></div>
+        </div>
+        ${itemsHtml}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  const btn = document.getElementById('bulk-save-btn');
+  if (btn) btn.textContent = `選択した${selectedCount}件を完了として保存`;
+}
+
+function bulkToggleSelect(idx, val) {
+  bulkEntries[idx].selected = val;
+  renderBulkEntries();
+}
+
+function bulkToggleExpand(idx) {
+  bulkEntries[idx].expanded = !bulkEntries[idx].expanded;
+  renderBulkEntries();
+}
+
+function bulkUpdateEntry(idx, field, val) {
+  bulkEntries[idx][field] = val;
+}
+
+function bulkApplyCommon() {
+  const date = document.getElementById('bulk-common-date').value;
+  const by = document.getElementById('bulk-common-by').value;
+  bulkEntries.forEach(e => {
+    if (date) e.completedAt = date;
+    if (by) e.completedBy = by;
+  });
+  renderBulkEntries();
+}
+
+function bulkSetJudgment(entryIdx, measIdx, val) {
+  const s = db.inspections.find(i => i.id === bulkEntries[entryIdx].scheduleId);
+  if (s?.items?.[measIdx]) s.items[measIdx].judgment = val;
+  renderBulkEntries();
+}
+
+function bulkSetValue(entryIdx, measIdx, val, lower, upper) {
+  const s = db.inspections.find(i => i.id === bulkEntries[entryIdx].scheduleId);
+  if (!s?.items?.[measIdx]) return;
+  const n = parseFloat(val);
+  s.items[measIdx].measuredValue = isNaN(n) ? null : n;
+  if (!isNaN(n)) {
+    let jdg = 'OK';
+    if (lower !== null && n < lower) jdg = 'NG';
+    if (upper !== null && n > upper) jdg = 'NG';
+    s.items[measIdx].judgment = jdg;
+  }
+  renderBulkEntries();
+}
+
+function bulkSetAllOk(entryIdx) {
+  const s = db.inspections.find(i => i.id === bulkEntries[entryIdx].scheduleId);
+  if (s?.items) s.items.forEach(it => { if (!it.judgment) it.judgment = 'OK'; });
+  renderBulkEntries();
+}
+
+function submitBulkInspection() {
+  const toComplete = bulkEntries.filter(e => e.selected);
+  toComplete.forEach(entry => {
+    const s = db.inspections.find(i => i.id === entry.scheduleId);
+    if (!s) return;
+    s.completed = true;
+    s.completedAt = entry.completedAt;
+    s.completedBy = entry.completedBy;
+    const next = new Date(s.scheduledAt);
+    next.setDate(next.getDate() + s.intervalDays);
+    const device = db.devices.find(d => d.id === s.deviceId);
+    db.inspections.push({
+      id: uid(), deviceId: s.deviceId, scheduledAt: next.toISOString().split('T')[0],
+      intervalDays: s.intervalDays, description: s.description, completed: false,
+      items: (device?.inspectionItems ?? []).map(item => ({
+        id: uid(), name: item.name, category: item.category || '外装・機能点検',
+        lowerLimit: item.lowerLimit, upperLimit: item.upperLimit, measuredValue: null, judgment: null,
+      })),
+    });
+  });
+  closeModal('modal-bulk-inspection');
+  renderInspections();
 }
 </script>
 </body>
