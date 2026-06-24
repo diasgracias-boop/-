@@ -333,6 +333,10 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
         修理・故障履歴
       </button>
+      <button onclick="showPage('clean-field')" id="nav-clean-field" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+        清潔野機器一覧
+      </button>
     </nav>
     <div class="p-3 border-t border-gray-200">
       <div class="flex items-center gap-3 px-3 py-2">
@@ -496,6 +500,18 @@
           <tbody id="repair-table-body"></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- 清潔野機器一覧 -->
+    <div id="page-clean-field" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">清潔野機器一覧</h1>
+          <p class="text-sm text-gray-500 mt-1">清潔野機器として登録された機器をカテゴリ別に表示</p>
+        </div>
+        <div id="clean-field-count" class="bg-teal-50 border border-teal-200 rounded-lg px-4 py-2 text-sm text-teal-700 font-medium"></div>
+      </div>
+      <div id="clean-field-content"></div>
     </div>
 
   </main>
@@ -743,9 +759,15 @@
             <select id="f-disposalStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">-</option><option value="DISPOSED">廃棄</option><option value="INACTIVE">未稼働</option>
             </select></div>
-          <div class="flex items-center gap-2 pt-6">
-            <input type="checkbox" id="f-isCleanField" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
-            <label for="f-isCleanField" class="text-sm font-medium text-gray-700">清潔野機器</label>
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <input type="checkbox" id="f-isCleanField" onchange="toggleCleanFieldCategory()" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+              <label for="f-isCleanField" class="text-sm font-medium text-gray-700">清潔野機器</label>
+            </div>
+            <div id="f-cleanFieldCategory-wrap" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-1">清潔野機器カテゴリ</label>
+              <input type="text" id="f-cleanFieldCategory" placeholder="例: 超音波機器、呼吸器関連" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
           </div>
         </div>
       </div>
@@ -1142,15 +1164,15 @@ let db = {
     ]},
   ],
   devices: [
-    { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象', pmdaApprovalNumber: '20150BZX00234000', pmdaDocUpdatedAt: '2024-03-01', pmdaUpdateAvailable: false, inspectionItems: [
+    { id: 'd1', deviceCode: 'ECG-001', name: '心電計', category: '診断機器', manufacturer: '日本光電', model: 'ECG-2550', serialNumber: 'SN-20230001', location: '3F 内科病棟', department: '内科', purchaseDate: '2020-04-01', warrantyExpiry: '2025-03-31', status: 'ACTIVE', notes: '年次点検対象', pmdaApprovalNumber: '20150BZX00234000', pmdaDocUpdatedAt: '2024-03-01', pmdaUpdateAvailable: false, isCleanField: false, cleanFieldCategory: '', inspectionItems: [
       { id: 'di1', name: '外観・ケーブル確認', category: '外装・機能点検', lowerLimit: null, upperLimit: null, sortOrder: 0 },
       { id: 'di2', name: '絶縁抵抗（MΩ）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, sortOrder: 1 },
       { id: 'di3', name: '接地抵抗（Ω）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 0.1, sortOrder: 2 },
       { id: 'di4', name: '漏れ電流（μA）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 100, sortOrder: 3 },
     ]},
-    { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, inspectionItems: [] },
-    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, inspectionItems: [] },
-    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true, inspectionItems: [
+    { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', department: '放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, isCleanField: false, cleanFieldCategory: '', inspectionItems: [] },
+    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', department: '集中治療室', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, isCleanField: true, cleanFieldCategory: '呼吸器関連', inspectionItems: [] },
+    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', department: '外科', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true, isCleanField: true, cleanFieldCategory: '超音波機器', inspectionItems: [
       { id: 'di5', name: 'プローブ出力（mW）', category: '性能点検', lowerLimit: 10, upperLimit: 50, sortOrder: 0 },
     ]},
   ],
@@ -1239,7 +1261,7 @@ document.getElementById('login-password').addEventListener('keydown', e => { if 
 
 // ==================== ナビゲーション ====================
 function showPage(name) {
-  ['dashboard','devices','inspections','maintenance','repairs'].forEach(p => {
+  ['dashboard','devices','inspections','maintenance','repairs','clean-field'].forEach(p => {
     document.getElementById('page-' + p).classList.add('hidden');
     const nav = document.getElementById('nav-' + p);
     if (nav) nav.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left text-gray-600 hover:bg-gray-50';
@@ -1252,6 +1274,7 @@ function showPage(name) {
   if (name === 'inspections')  renderInspections();
   if (name === 'maintenance')  renderMaintenance();
   if (name === 'repairs')      renderRepairs();
+  if (name === 'clean-field')  renderCleanField();
 }
 
 // ==================== モーダル ====================
@@ -1732,6 +1755,10 @@ function openDeviceModal(id) {
   if (disposalEl) disposalEl.value = d ? (d.disposalStatus || '') : '';
   const cleanEl = document.getElementById('f-isCleanField');
   if (cleanEl) cleanEl.checked = d ? !!d.isCleanField : false;
+  const cleanCatEl = document.getElementById('f-cleanFieldCategory');
+  if (cleanCatEl) cleanCatEl.value = d ? (d.cleanFieldCategory || '') : '';
+  const cleanWrap = document.getElementById('f-cleanFieldCategory-wrap');
+  if (cleanWrap) cleanWrap.classList.toggle('hidden', !(d?.isCleanField));
 
   // Document cards
   ['attachment', 'catalog', 'manual'].forEach(type => {
@@ -1812,6 +1839,8 @@ function saveDevice() {
   if (disposalEl) vals.disposalStatus = disposalEl.value;
   const cleanEl = document.getElementById('f-isCleanField');
   if (cleanEl) vals.isCleanField = cleanEl.checked;
+  const cleanCatEl2 = document.getElementById('f-cleanFieldCategory');
+  if (cleanCatEl2) vals.cleanFieldCategory = cleanCatEl2.value;
   // Document URLs from the url inputs
   ['attachment','catalog','manual'].forEach(type => {
     const el = document.getElementById('f-' + docKeyMap[type]);
@@ -2391,6 +2420,85 @@ function saveRepairUpdate() {
   }
   closeModal('modal-repair-update');
   renderRepairs();
+}
+
+function toggleCleanFieldCategory() {
+  const checked = document.getElementById('f-isCleanField')?.checked;
+  const wrap = document.getElementById('f-cleanFieldCategory-wrap');
+  if (wrap) wrap.classList.toggle('hidden', !checked);
+}
+
+// ==================== 清潔野機器一覧 ====================
+function renderCleanField() {
+  const cleanDevices = db.devices.filter(d => d.isCleanField && d.status !== 'RETIRED');
+  const countEl = document.getElementById('clean-field-count');
+  if (countEl) countEl.textContent = `計 ${cleanDevices.length} 台`;
+
+  const content = document.getElementById('clean-field-content');
+  if (!content) return;
+
+  if (cleanDevices.length === 0) {
+    content.innerHTML = `<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+      <div class="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <p class="text-gray-500 text-sm">清潔野機器として登録された機器はありません</p>
+      <p class="text-gray-400 text-xs mt-1">機器情報の「廃棄・その他」タブで「清潔野機器」にチェックを入れてください</p>
+    </div>`;
+    return;
+  }
+
+  const STATUS_LABEL = { ACTIVE: '稼働中', MAINTENANCE: '点検中', REPAIR: '修理中', RETIRED: '廃棄' };
+  const STATUS_COLOR = { ACTIVE: 'bg-green-100 text-green-700', MAINTENANCE: 'bg-yellow-100 text-yellow-700', REPAIR: 'bg-red-100 text-red-700', RETIRED: 'bg-gray-100 text-gray-500' };
+
+  // Group by cleanFieldCategory
+  const groups = {};
+  cleanDevices.forEach(d => {
+    const key = d.cleanFieldCategory || '（未分類）';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(d);
+  });
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    if (a === '（未分類）') return 1;
+    if (b === '（未分類）') return -1;
+    return a.localeCompare(b, 'ja');
+  });
+
+  content.innerHTML = sortedKeys.map(cat => `
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+      <div class="bg-teal-50 border-b border-teal-100 px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-teal-500 rounded-full"></div>
+          <h2 class="text-sm font-semibold text-teal-800">${cat}</h2>
+        </div>
+        <span class="text-xs text-teal-600 font-medium">${groups[cat].length} 台</span>
+      </div>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+          <tr class="text-xs text-gray-500 text-left">
+            <th class="px-4 py-2.5">管理番号</th>
+            <th class="px-4 py-2.5">機器名</th>
+            <th class="px-4 py-2.5">機器カテゴリ</th>
+            <th class="px-4 py-2.5">メーカー / 型式</th>
+            <th class="px-4 py-2.5">配備部署</th>
+            <th class="px-4 py-2.5">設置場所</th>
+            <th class="px-4 py-2.5">状態</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          ${groups[cat].map(d => `<tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-3 font-mono text-xs text-gray-500">${d.deviceCode}</td>
+            <td class="px-4 py-3 font-medium text-gray-900">${d.name}</td>
+            <td class="px-4 py-3 text-gray-500 text-xs">${d.category}</td>
+            <td class="px-4 py-3 text-gray-600 text-xs"><div>${d.manufacturer}</div><div class="text-gray-400">${d.model}</div></td>
+            <td class="px-4 py-3 text-gray-600 text-xs">${d.department||'—'}</td>
+            <td class="px-4 py-3 text-gray-600 text-xs">${d.location}</td>
+            <td class="px-4 py-3"><span class="inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[d.status]||'bg-gray-100 text-gray-500'}">${STATUS_LABEL[d.status]||d.status}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
 }
 
 // ==================== ヘルパー ====================
