@@ -10,19 +10,16 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const upcoming = searchParams.get("upcoming");
   const overdue = searchParams.get("overdue");
+  const deviceId = searchParams.get("deviceId");
 
   const now = new Date();
   const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const schedules = await prisma.inspectionSchedule.findMany({
     where: {
-      completed: false,
-      ...(upcoming === "true" && {
-        scheduledAt: { lte: thirtyDaysLater },
-      }),
-      ...(overdue === "true" && {
-        scheduledAt: { lt: now },
-      }),
+      ...(deviceId ? { deviceId } : { completed: false }),
+      ...(upcoming === "true" && { scheduledAt: { lte: thirtyDaysLater } }),
+      ...(overdue === "true" && { scheduledAt: { lt: now } }),
     },
     include: {
       device: { select: { name: true, deviceCode: true, location: true } },

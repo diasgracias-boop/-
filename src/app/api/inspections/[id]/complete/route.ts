@@ -10,6 +10,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
   const measurements: { id: string; measuredValue?: number; judgment?: string }[] = body.measurements ?? [];
+  const completedBy: string | undefined = body.completedBy || undefined;
+  const completedAt: Date = body.completedAt ? new Date(body.completedAt) : new Date();
 
   // Update item measurements
   if (measurements.length > 0) {
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const schedule = await prisma.inspectionSchedule.update({
     where: { id },
-    data: { completed: true, completedAt: new Date() },
+    data: { completed: true, completedAt, completedBy: completedBy ?? null },
     include: { items: true },
   });
 

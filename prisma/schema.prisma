@@ -126,6 +126,7 @@ model InspectionSchedule {
   description  String
   completed    Boolean   @default(false)
   completedAt  DateTime?
+  completedBy  String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

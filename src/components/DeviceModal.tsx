@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
 import DocumentUpload from "./DocumentUpload";
 import InspectionTemplateModal from "./InspectionTemplateModal";
@@ -74,8 +74,35 @@ function toDateInput(d?: string | null) {
   return new Date(d).toISOString().split("T")[0];
 }
 
-const TABS = ["基本情報", "点検・バッテリー", "廃棄・その他"] as const;
+const TABS = ["基本情報", "点検・バッテリー", "定期点検", "廃棄・その他"] as const;
 type Tab = (typeof TABS)[number];
+
+interface InspectionScheduleForModal {
+  id: string;
+  scheduledAt: string;
+  intervalDays: number;
+  description: string;
+  completed: boolean;
+  completedAt?: string | null;
+  completedBy?: string | null;
+  items: { id: string; name: string; category?: string; lowerLimit: number | null; upperLimit: number | null; measuredValue: number | null; judgment: string | null }[];
+}
+
+interface InspectionMeasurement {
+  id: string;
+  measuredValue: string;
+  judgment: string;
+}
+
+function autoJudge(value: string, lower: number | null, upper: number | null): string {
+  const v = parseFloat(value);
+  if (isNaN(v)) return "";
+  if (lower !== null && v < lower) return "NG";
+  if (upper !== null && v > upper) return "NG";
+  return "OK";
+}
+
+const INSP_CATS = ["外装・機能点検", "性能点検", "電気的安全性点検"] as const;
 
 export default function DeviceModal({ device, onClose, onSaved }: DeviceModalProps) {
   const [tab, setTab] = useState<Tab>("基本情報");
@@ -131,6 +158,82 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [pmdaTarget, setPmdaTarget] = useState<DocField | null>(null);
+
+  // 定期点検タブ用 state
+  const [schedules, setSchedules] = useState<InspectionScheduleForModal[]>([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [activeScheduleId, setActiveScheduleId] = useState<string | null>(null);
+  const [inspCompletedAt, setInspCompletedAt] = useState("");
+  const [inspCompletedBy, setInspCompletedBy] = useState("");
+  const [inspMeasurements, setInspMeasurements] = useState<InspectionMeasurement[]>([]);
+  const [inspSaving, setInspSaving] = useState(false);
+  const [inspLoadingItems, setInspLoadingItems] = useState(false);
+
+  const loadSchedules = useCallback(async () => {
+    if (!device?.id) return;
+    setSchedulesLoading(true);
+    const res = await fetch(`/api/inspections?deviceId=${device.id}`);
+    const data: InspectionScheduleForModal[] = await res.json();
+    setSchedules(data);
+    setSchedulesLoading(false);
+  }, [device?.id]);
+
+  useEffect(() => {
+    if (tab === "定期点検") loadSchedules();
+  }, [tab, loadSchedules]);
+
+  async function openScheduleForComplete(schedule: InspectionScheduleForModal) {
+    setActiveScheduleId(schedule.id);
+    setInspCompletedAt(new Date().toISOString().split("T")[0]);
+    setInspCompletedBy("");
+    setInspLoadingItems(true);
+    // 項目がなければ populate-items で自動生成
+    let items = schedule.items;
+    if (items.length === 0) {
+      const res = await fetch(`/api/inspections/${schedule.id}/populate-items`, { method: "POST" });
+      items = await res.json();
+      setSchedules((prev) => prev.map((s) => s.id === schedule.id ? { ...s, items } : s));
+    }
+    setInspMeasurements(items.map((it) => ({ id: it.id, measuredValue: it.measuredValue?.toString() ?? "", judgment: it.judgment ?? "" })));
+    setInspLoadingItems(false);
+  }
+
+  function updateInspMeasurement(index: number, field: "measuredValue" | "judgment", value: string) {
+    setInspMeasurements((prev) => prev.map((m, i) => {
+      if (i !== index) return m;
+      const updated = { ...m, [field]: value };
+      if (field === "measuredValue") {
+        const s = schedules.find((s) => s.id === activeScheduleId);
+        if (s) {
+          const item = s.items[index];
+          updated.judgment = autoJudge(value, item.lowerLimit, item.upperLimit);
+        }
+      }
+      return updated;
+    }));
+  }
+
+  async function submitInspection() {
+    if (!activeScheduleId) return;
+    setInspSaving(true);
+    const payload = {
+      completedBy: inspCompletedBy || undefined,
+      completedAt: inspCompletedAt || undefined,
+      measurements: inspMeasurements.map((m) => ({
+        id: m.id,
+        measuredValue: m.measuredValue !== "" ? parseFloat(m.measuredValue) : undefined,
+        judgment: m.judgment || undefined,
+      })),
+    };
+    await fetch(`/api/inspections/${activeScheduleId}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setActiveScheduleId(null);
+    setInspSaving(false);
+    loadSchedules();
+  }
 
   async function loadTemplates() {
     const res = await fetch("/api/inspection-templates");
@@ -524,6 +627,186 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                 </div>
               </div>
             </>
+          )}
+
+          {/* ===== 定期点検 ===== */}
+          {tab === "定期点検" && (
+            <div className="p-6 space-y-4">
+              {!device?.id ? (
+                <p className="text-sm text-gray-500">機器を保存してから点検を登録してください。</p>
+              ) : schedulesLoading ? (
+                <p className="text-sm text-gray-400">読み込み中...</p>
+              ) : schedules.length === 0 ? (
+                <p className="text-sm text-gray-500">点検スケジュールがありません。「点検スケジュール」ページから追加してください。</p>
+              ) : (
+                <div className="space-y-3">
+                  {schedules.map((s) => {
+                    const isActive = activeScheduleId === s.id;
+                    const days = Math.ceil((new Date(s.scheduledAt).getTime() - Date.now()) / 86400000);
+                    const isOverdue = days < 0;
+                    const ngCount = inspMeasurements.filter((m) => m.judgment === "NG").length;
+                    return (
+                      <div key={s.id} className={`border rounded-xl overflow-hidden ${s.completed ? "border-gray-200 opacity-60" : isOverdue ? "border-red-300" : "border-gray-200"}`}>
+                        {/* スケジュールヘッダー */}
+                        <div
+                          className={`flex items-center justify-between px-4 py-3 cursor-pointer ${s.completed ? "bg-gray-50" : isActive ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                          onClick={() => { if (!s.completed) isActive ? setActiveScheduleId(null) : openScheduleForComplete(s); }}
+                        >
+                          <div className="flex items-center gap-3">
+                            {s.completed ? (
+                              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">完了済</span>
+                            ) : isOverdue ? (
+                              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">期限超過</span>
+                            ) : (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">予定</span>
+                            )}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{s.description}</div>
+                              <div className="text-xs text-gray-500">
+                                予定日: {new Date(s.scheduledAt).toLocaleDateString("ja-JP")}
+                                {s.completed && s.completedAt && (
+                                  <> ／ 実施日: {new Date(s.completedAt).toLocaleDateString("ja-JP")}
+                                  {s.completedBy && ` ／ 点検者: ${s.completedBy}`}</>
+                                )}
+                                {!s.completed && !isOverdue && <> ／ あと{days}日</>}
+                                {!s.completed && isOverdue && <> ／ {Math.abs(days)}日超過</>}
+                              </div>
+                            </div>
+                          </div>
+                          {!s.completed && (
+                            <svg className={`w-4 h-4 text-gray-400 transition-transform ${isActive ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                          )}
+                        </div>
+
+                        {/* 入力エリア */}
+                        {isActive && (
+                          <div className="border-t border-gray-200 p-4 space-y-4">
+                            {/* 点検日・点検者 */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">点検日 *</label>
+                                <input
+                                  type="date"
+                                  value={inspCompletedAt}
+                                  onChange={(e) => setInspCompletedAt(e.target.value)}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">点検者</label>
+                                <input
+                                  type="text"
+                                  value={inspCompletedBy}
+                                  onChange={(e) => setInspCompletedBy(e.target.value)}
+                                  placeholder="氏名・部署など"
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+
+                            {/* 点検項目テーブル */}
+                            {inspLoadingItems ? (
+                              <p className="text-xs text-gray-400">点検項目を読み込み中...</p>
+                            ) : s.items.length === 0 ? (
+                              <p className="text-xs text-gray-400">点検項目がありません。</p>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm border-collapse">
+                                  <thead className="sticky top-0 bg-white">
+                                    <tr className="text-xs text-gray-500 font-medium border-b border-gray-200">
+                                      <th className="text-left px-2 py-1.5">点検項目</th>
+                                      <th className="text-center px-2 py-1.5 w-20">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <span>判定</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => setInspMeasurements((prev) => prev.map((m) => ({ ...m, judgment: m.judgment === "" ? "OK" : m.judgment })))}
+                                            className="text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded font-medium hover:bg-green-200"
+                                          >全OK</button>
+                                        </div>
+                                      </th>
+                                      <th className="text-center px-2 py-1.5 w-24">測定値</th>
+                                      <th className="text-center px-2 py-1.5 w-14">上限</th>
+                                      <th className="text-center px-2 py-1.5 w-14">下限</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(() => {
+                                      const rows: React.ReactNode[] = [];
+                                      let lastCat: string | null = null;
+                                      s.items.forEach((item, idx) => {
+                                        const cat = item.category ?? "";
+                                        const isKnownCat = (INSP_CATS as readonly string[]).includes(cat);
+                                        if (isKnownCat && cat !== lastCat) {
+                                          lastCat = cat;
+                                          rows.push(
+                                            <tr key={`cat-${cat}`} className="bg-blue-50">
+                                              <td colSpan={5} className="px-2 py-1 text-xs font-semibold text-blue-700 border-t border-blue-100">{cat}</td>
+                                            </tr>
+                                          );
+                                        }
+                                        const m = inspMeasurements[idx];
+                                        if (!m) return;
+                                        const isNg = m.judgment === "NG";
+                                        const isOk = m.judgment === "OK";
+                                        rows.push(
+                                          <tr key={item.id} className={`border-t border-gray-100 ${isNg ? "bg-red-50" : isOk ? "bg-green-50/40" : ""}`}>
+                                            <td className="px-2 py-1 text-gray-800 font-medium text-xs">{item.name}</td>
+                                            <td className="px-2 py-1">
+                                              <select
+                                                value={m.judgment}
+                                                onChange={(e) => updateInspMeasurement(idx, "judgment", e.target.value)}
+                                                className={`w-full border rounded px-1 py-0.5 text-xs font-semibold text-center focus:outline-none focus:ring-1 focus:ring-blue-500 ${isOk ? "border-green-400 bg-green-100 text-green-700" : isNg ? "border-red-400 bg-red-100 text-red-700" : "border-gray-300 text-gray-500"}`}
+                                              >
+                                                <option value="">—</option>
+                                                <option value="OK">OK</option>
+                                                <option value="NG">NG</option>
+                                              </select>
+                                            </td>
+                                            <td className="px-2 py-1">
+                                              <input
+                                                type="number"
+                                                value={m.measuredValue}
+                                                onChange={(e) => updateInspMeasurement(idx, "measuredValue", e.target.value)}
+                                                step="any"
+                                                placeholder="—"
+                                                className={`w-full border rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500 ${isNg ? "border-red-300 bg-red-50" : "border-gray-300"}`}
+                                              />
+                                            </td>
+                                            <td className="px-2 py-1 text-center text-gray-400 text-xs">{item.upperLimit ?? "—"}</td>
+                                            <td className="px-2 py-1 text-center text-gray-400 text-xs">{item.lowerLimit ?? "—"}</td>
+                                          </tr>
+                                        );
+                                      });
+                                      return rows;
+                                    })()}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {/* 送信ボタン */}
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={submitInspection}
+                                disabled={inspSaving || !inspCompletedAt}
+                                className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                              >
+                                {inspSaving ? "保存中..." : `点検完了として保存${ngCount > 0 ? `（NG ${ngCount}件）` : ""}`}
+                              </button>
+                              <button type="button" onClick={() => setActiveScheduleId(null)} className="px-4 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">
+                                キャンセル
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {/* ===== 廃棄・その他 ===== */}
