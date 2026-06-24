@@ -507,7 +507,7 @@
     </div>
 
     <!-- 滅菌前点検 -->
-    <div id="page-sterilization-check" class="hidden flex flex-col" style="flex:1;min-height:0">
+    <div id="page-sterilization-check" class="hidden" style="flex:1;min-height:0;flex-direction:column">
       <!-- Header bar -->
       <div class="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0">
         <h1 class="text-lg font-bold text-gray-900" style="margin-right:0.5rem">滅菌前点検</h1>
@@ -1460,11 +1460,13 @@ document.getElementById('login-password').addEventListener('keydown', e => { if 
 // ==================== ナビゲーション ====================
 function showPage(name) {
   ['dashboard','devices','inspections','maintenance','repairs','sterilization-check','clean-field'].forEach(p => {
-    document.getElementById('page-' + p).classList.add('hidden');
+    const el = document.getElementById('page-' + p);
+    if (el) el.classList.add('hidden');
     const nav = document.getElementById('nav-' + p);
     if (nav) nav.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left text-gray-600 hover:bg-gray-50';
   });
-  document.getElementById('page-' + name).classList.remove('hidden');
+  const activePage = document.getElementById('page-' + name);
+  if (activePage) activePage.classList.remove('hidden');
   const active = document.getElementById('nav-' + name);
   if (active) active.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left bg-blue-50 text-blue-700 font-medium';
   if (name === 'dashboard')    { renderDashboard(); autoCheckPmda(); }
@@ -1472,7 +1474,7 @@ function showPage(name) {
   if (name === 'inspections')  renderInspections();
   if (name === 'maintenance')  renderMaintenance();
   if (name === 'repairs')      renderRepairs();
-  if (name === 'sterilization-check') { scSelected = []; renderSterilizationList(); }
+  if (name === 'sterilization-check') { activePage.style.display = 'flex'; scSelected = []; renderSterilizationList(); }
   if (name === 'clean-field')  renderCleanField();
 }
 
@@ -3326,7 +3328,6 @@ function scSearchInput() {
   if (allMatches.length === 0) {
     cand.innerHTML = '<div class="px-3 py-3 text-sm text-gray-400">該当なし</div>';
   } else {
-    {
     cand.innerHTML = allMatches.map(d => {
       const isSelected = scSelected.some(s => s.deviceId === d.id);
       return `<label class="flex items-center gap-2 px-3 py-2 cursor-pointer border-b border-gray-100 ${isSelected ? 'bg-teal-50' : 'hover:bg-teal-50'}" style="border-bottom:1px solid #f3f4f6">
