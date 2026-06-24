@@ -503,20 +503,13 @@
     </div>
 
     <!-- 清潔野機器一覧 -->
-    <div id="page-clean-field" class="hidden p-6">
-      <div class="flex items-start justify-between mb-4">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">清潔野機器一覧</h1>
-          <p class="text-sm text-gray-500 mt-0.5">清潔野機器として登録された機器をカテゴリ別に表示</p>
+    <div id="page-clean-field" class="hidden p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h1 class="text-xl font-bold text-gray-900">清潔野機器一覧</h1>
+        <div class="flex items-center gap-2">
+          <span id="clean-field-shortage" class="hidden bg-red-50 border border-red-200 rounded-md px-3 py-1 text-xs text-red-700 font-medium"></span>
+          <span id="clean-field-count" class="bg-teal-50 border border-teal-200 rounded-md px-3 py-1 text-xs text-teal-700 font-medium"></span>
         </div>
-        <div class="flex items-center gap-3">
-          <div id="clean-field-shortage" class="hidden bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 font-medium"></div>
-          <div id="clean-field-count" class="bg-teal-50 border border-teal-200 rounded-lg px-4 py-2 text-sm text-teal-700 font-medium"></div>
-        </div>
-      </div>
-      <div id="clean-field-toolbar" class="hidden flex items-center gap-2 mb-4">
-        <button onclick="cleanFieldExpandAll(true)" class="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors">すべて展開</button>
-        <button onclick="cleanFieldExpandAll(false)" class="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors">すべて折りたたむ</button>
       </div>
       <div id="clean-field-content"></div>
     </div>
@@ -2482,45 +2475,23 @@ function cleanFieldGroupDevices(devices) {
   }
   return Array.from(map.values());
 }
-function cleanFieldToggleCat(catId) {
-  const body = document.getElementById('cf-body-' + catId);
-  const arrow = document.getElementById('cf-arrow-' + catId);
-  if (!body) return;
-  const hidden = body.classList.toggle('hidden');
-  if (arrow) arrow.style.transform = hidden ? '' : 'rotate(90deg)';
-}
-function cleanFieldExpandAll(open) {
-  document.querySelectorAll('[id^="cf-body-"]').forEach(el => {
-    el.classList.toggle('hidden', !open);
-  });
-  document.querySelectorAll('[id^="cf-arrow-"]').forEach(el => {
-    el.style.transform = open ? 'rotate(90deg)' : '';
-  });
-}
 function renderCleanField() {
   const cleanDevices = db.devices.filter(d => d.isCleanField && d.status !== 'RETIRED');
   const countEl = document.getElementById('clean-field-count');
   if (countEl) countEl.textContent = `計 ${cleanDevices.length} 台`;
 
   const content = document.getElementById('clean-field-content');
-  const toolbar = document.getElementById('clean-field-toolbar');
   if (!content) return;
 
   if (cleanDevices.length === 0) {
-    if (toolbar) toolbar.classList.add('hidden');
     const shortageEl = document.getElementById('clean-field-shortage');
     if (shortageEl) shortageEl.classList.add('hidden');
     content.innerHTML = `<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
-      <div class="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-3">
-        <svg class="w-6 h-6 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
       <p class="text-gray-500 text-sm">清潔野機器として登録された機器はありません</p>
       <p class="text-gray-400 text-xs mt-1">機器情報の「廃棄・その他」タブで「清潔野機器」にチェックを入れてください</p>
     </div>`;
     return;
   }
-
-  if (toolbar) toolbar.classList.remove('hidden');
 
   // Group by cleanFieldCategory
   const groups = {};
@@ -2540,63 +2511,48 @@ function renderCleanField() {
   const totalShortage = allRows.filter(r => r.currentCount != null && r.defaultCount != null && r.currentCount < r.defaultCount).length;
   const shortageEl = document.getElementById('clean-field-shortage');
   if (shortageEl) {
-    if (totalShortage > 0) {
-      shortageEl.textContent = `不足 ${totalShortage} 種`;
-      shortageEl.classList.remove('hidden');
-    } else {
-      shortageEl.classList.add('hidden');
-    }
+    shortageEl.textContent = `不足 ${totalShortage} 種`;
+    shortageEl.classList.toggle('hidden', totalShortage === 0);
   }
 
-  content.innerHTML = sortedKeys.map((cat, i) => {
+  content.innerHTML = sortedKeys.map(cat => {
     const rows = cleanFieldGroupDevices(groups[cat]);
     const catShortage = rows.filter(r => r.currentCount != null && r.defaultCount != null && r.currentCount < r.defaultCount).length;
-    const catId = 'cat' + i;
     return `
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
-      <button type="button" onclick="cleanFieldToggleCat('${catId}')" class="w-full bg-teal-50 border-b border-teal-100 px-5 py-3 flex items-center justify-between hover:bg-teal-100 transition-colors">
-        <div class="flex items-center gap-3">
-          <svg id="cf-arrow-${catId}" class="w-4 h-4 text-teal-500 transition-transform" style="transform:rotate(90deg)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
-          <div class="w-2 h-2 bg-teal-500 rounded-full"></div>
-          <span class="text-sm font-semibold text-teal-800">${cat}</span>
-          <span class="text-xs text-teal-500 font-normal">${groups[cat].length} 台 / ${rows.length} 種</span>
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden mb-3">
+      <div class="bg-teal-50 border-b border-teal-100 px-3 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
+          <span class="text-xs font-semibold text-teal-800">${cat}</span>
+          <span class="text-xs text-teal-500">${groups[cat].length} 台 / ${rows.length} 種</span>
         </div>
         ${catShortage > 0 ? `<span class="text-xs bg-red-100 text-red-600 font-medium px-2 py-0.5 rounded-full">不足 ${catShortage} 種</span>` : ''}
-      </button>
-      <div id="cf-body-${catId}">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50 border-b border-gray-100">
-            <tr class="text-xs text-gray-500">
-              <th class="px-4 py-2 text-left">機器名</th>
-              <th class="px-4 py-2 text-center w-24">既定定数</th>
-              <th class="px-4 py-2 text-center w-24">現在定数</th>
-              <th class="px-4 py-2 text-center w-24">代品数</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-50">
-            ${rows.map(row => {
-              const shortage = row.currentCount != null && row.defaultCount != null && row.currentCount < row.defaultCount;
-              const diff = shortage ? row.defaultCount - row.currentCount : null;
-              const defCount = row.defaultCount != null ? row.defaultCount : '—';
-              const curCount = row.currentCount != null ? row.currentCount : '—';
-              const subCount = row.substituteCount != null ? row.substituteCount : '—';
-              return `<tr class="${shortage ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'} transition-colors">
-                <td class="px-4 py-2.5 font-medium text-gray-900">
-                  <div class="flex items-center gap-2">
-                    ${shortage ? '<span class="inline-block w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0"></span>' : ''}
-                    ${row.baseName}
-                    ${shortage && diff != null ? `<span class="text-xs text-red-500 font-normal">（${diff} 不足）</span>` : ''}
-                  </div>
-                </td>
-                <td class="px-4 py-2.5 text-center"><span class="text-sm font-medium text-gray-600">${defCount}</span></td>
-                <td class="px-4 py-2.5 text-center"><span class="text-sm font-bold ${shortage ? 'text-red-600' : 'text-gray-800'}">${curCount}</span></td>
-                <td class="px-4 py-2.5 text-center"><span class="text-sm text-gray-600">${subCount}</span></td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #f3f4f6">
+        ${rows.map(row => {
+          const shortage = row.currentCount != null && row.defaultCount != null && row.currentCount < row.defaultCount;
+          const diff = shortage ? row.defaultCount - row.currentCount : null;
+          return `<div style="border-right:1px solid #f3f4f6;border-bottom:1px solid #f3f4f6;padding:6px 8px${shortage ? ';background:#fef2f2' : ''}">
+            <div style="font-size:11px;font-weight:500;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px" title="${row.baseName}">
+              ${shortage ? '<span style="display:inline-block;width:5px;height:5px;background:#ef4444;border-radius:50%;margin-right:3px;vertical-align:middle"></span>' : ''}${row.baseName}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:2px">
+              <div>
+                <div style="font-size:9px;color:#9ca3af">既定</div>
+                <div style="font-size:12px;font-weight:500;color:#6b7280">${row.defaultCount ?? '—'}</div>
+              </div>
+              <div>
+                <div style="font-size:9px;color:#9ca3af">現在</div>
+                <div style="font-size:12px;font-weight:700;color:${shortage ? '#dc2626' : '#111827'}">${row.currentCount ?? '—'}</div>
+              </div>
+              <div>
+                <div style="font-size:9px;color:#9ca3af">代品</div>
+                <div style="font-size:12px;color:#6b7280">${row.substituteCount ?? '—'}</div>
+              </div>
+            </div>
+            ${shortage && diff != null ? `<div style="text-align:center;font-size:9px;color:#ef4444;margin-top:1px">−${diff} 不足</div>` : ''}
+          </div>`;
+        }).join('')}
       </div>
     </div>
   `;}).join('');
