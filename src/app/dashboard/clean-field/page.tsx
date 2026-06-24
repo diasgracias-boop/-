@@ -8,6 +8,9 @@ interface CleanFieldDevice {
   name: string;
   category: string;
   cleanFieldCategory: string | null;
+  cleanFieldDefaultCount: number | null;
+  cleanFieldCurrentCount: number | null;
+  cleanFieldSubstituteCount: number | null;
   manufacturer: string;
   model: string;
   location: string;
@@ -97,8 +100,9 @@ export default function CleanFieldPage() {
                   <tr className="text-xs text-gray-500 text-left">
                     <th className="px-4 py-2.5">管理番号</th>
                     <th className="px-4 py-2.5">機器名</th>
-                    <th className="px-4 py-2.5">機器カテゴリ</th>
-                    <th className="px-4 py-2.5">メーカー / 型式</th>
+                    <th className="px-4 py-2.5 text-center">既定定数</th>
+                    <th className="px-4 py-2.5 text-center">現在定数</th>
+                    <th className="px-4 py-2.5 text-center">代品数</th>
                     <th className="px-4 py-2.5">配備部署</th>
                     <th className="px-4 py-2.5">設置場所</th>
                     <th className="px-4 py-2.5">状態</th>
@@ -109,10 +113,20 @@ export default function CleanFieldPage() {
                     <tr key={d.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-mono text-xs text-gray-500">{d.deviceCode}</td>
                       <td className="px-4 py-3 font-medium text-gray-900">{d.name}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{d.category}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">
-                        <div>{d.manufacturer}</div>
-                        <div className="text-gray-400">{d.model}</div>
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-sm font-medium text-gray-700">{d.cleanFieldDefaultCount ?? "—"}</span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {d.cleanFieldCurrentCount != null && d.cleanFieldDefaultCount != null ? (
+                          <span className={`text-sm font-medium ${d.cleanFieldCurrentCount < d.cleanFieldDefaultCount ? "text-red-600" : "text-gray-700"}`}>
+                            {d.cleanFieldCurrentCount}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-700">{d.cleanFieldCurrentCount ?? "—"}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-sm text-gray-600">{d.cleanFieldSubstituteCount ?? "—"}</span>
                       </td>
                       <td className="px-4 py-3 text-gray-600 text-xs">{d.department ?? "—"}</td>
                       <td className="px-4 py-3 text-gray-600 text-xs">{d.location}</td>

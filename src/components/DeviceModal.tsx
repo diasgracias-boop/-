@@ -39,6 +39,9 @@ interface DeviceFormData {
   lastConsumableSpareReplacementDate: string;
   isCleanField: boolean;
   cleanFieldCategory: string;
+  cleanFieldDefaultCount: string;
+  cleanFieldCurrentCount: string;
+  cleanFieldSubstituteCount: string;
   photoUrl: string;
   attachmentUrl: string;
   catalogUrl: string;
@@ -137,6 +140,9 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     lastConsumableSpareReplacementDate: toDateInput(device?.lastConsumableSpareReplacementDate),
     isCleanField: device?.isCleanField ?? false,
     cleanFieldCategory: device?.cleanFieldCategory ?? "",
+    cleanFieldDefaultCount: device?.cleanFieldDefaultCount != null ? String(device.cleanFieldDefaultCount) : "",
+    cleanFieldCurrentCount: device?.cleanFieldCurrentCount != null ? String(device.cleanFieldCurrentCount) : "",
+    cleanFieldSubstituteCount: device?.cleanFieldSubstituteCount != null ? String(device.cleanFieldSubstituteCount) : "",
     photoUrl: device?.photoUrl ?? "",
     attachmentUrl: device?.attachmentUrl ?? "",
     catalogUrl: device?.catalogUrl ?? "",
@@ -881,9 +887,25 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                   <label htmlFor="isCleanField" className="text-sm font-medium text-gray-700">清潔野機器</label>
                 </div>
                 {form.isCleanField && (
-                  <div>
-                    <label className={labelCls}>清潔野機器分類</label>
-                    <input type="text" value={form.cleanFieldCategory} onChange={(e) => update("cleanFieldCategory", e.target.value)} className={inputCls} />
+                  <div className="space-y-3">
+                    <div>
+                      <label className={labelCls}>清潔野機器分類</label>
+                      <input type="text" value={form.cleanFieldCategory} onChange={(e) => update("cleanFieldCategory", e.target.value)} className={inputCls} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className={labelCls}>既定定数</label>
+                        <input type="number" min="0" value={form.cleanFieldDefaultCount} onChange={(e) => update("cleanFieldDefaultCount", e.target.value)} className={inputCls} placeholder="—" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>現在定数</label>
+                        <input type="number" min="0" value={form.cleanFieldCurrentCount} onChange={(e) => update("cleanFieldCurrentCount", e.target.value)} className={inputCls} placeholder="—" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>代品数</label>
+                        <input type="number" min="0" value={form.cleanFieldSubstituteCount} onChange={(e) => update("cleanFieldSubstituteCount", e.target.value)} className={inputCls} placeholder="—" />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

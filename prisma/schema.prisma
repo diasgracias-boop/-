@@ -54,8 +54,11 @@ model Device {
   consumableName   String?
   lastConsumableReplacementDate       DateTime?
   lastConsumableSpareReplacementDate  DateTime?
-  isCleanField     Boolean      @default(false)
-  cleanFieldCategory String?
+  isCleanField              Boolean   @default(false)
+  cleanFieldCategory        String?
+  cleanFieldDefaultCount    Int?
+  cleanFieldCurrentCount    Int?
+  cleanFieldSubstituteCount Int?
   photoUrl         String?
   attachmentUrl         String?
   catalogUrl            String?

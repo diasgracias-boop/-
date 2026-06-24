@@ -764,9 +764,25 @@
               <input type="checkbox" id="f-isCleanField" onchange="toggleCleanFieldCategory()" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
               <label for="f-isCleanField" class="text-sm font-medium text-gray-700">清潔野機器</label>
             </div>
-            <div id="f-cleanFieldCategory-wrap" class="hidden">
-              <label class="block text-sm font-medium text-gray-700 mb-1">清潔野機器カテゴリ</label>
-              <input type="text" id="f-cleanFieldCategory" placeholder="例: 超音波機器、呼吸器関連" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div id="f-cleanFieldCategory-wrap" class="hidden space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">清潔野機器カテゴリ</label>
+                <input type="text" id="f-cleanFieldCategory" placeholder="例: 超音波機器、呼吸器関連" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">既定定数</label>
+                  <input type="number" min="0" id="f-cleanFieldDefaultCount" placeholder="—" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">現在定数</label>
+                  <input type="number" min="0" id="f-cleanFieldCurrentCount" placeholder="—" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">代品数</label>
+                  <input type="number" min="0" id="f-cleanFieldSubstituteCount" placeholder="—" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1171,8 +1187,8 @@ let db = {
       { id: 'di4', name: '漏れ電流（μA）', category: '電気的安全性点検', lowerLimit: null, upperLimit: 100, sortOrder: 3 },
     ]},
     { id: 'd2', deviceCode: 'MRI-001', name: 'MRI装置', category: '画像診断機器', manufacturer: 'シーメンス', model: 'MAGNETOM Lumina', serialNumber: 'SN-20210042', location: 'B1F 放射線科', department: '放射線科', purchaseDate: '2021-10-01', warrantyExpiry: '2026-09-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, isCleanField: false, cleanFieldCategory: '', inspectionItems: [] },
-    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', department: '集中治療室', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, isCleanField: true, cleanFieldCategory: '呼吸器関連', inspectionItems: [] },
-    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', department: '外科', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true, isCleanField: true, cleanFieldCategory: '超音波機器', inspectionItems: [
+    { id: 'd3', deviceCode: 'VNT-003', name: '人工呼吸器', category: '治療機器', manufacturer: 'フクダ電子', model: 'VersaMed iVent 201', serialNumber: 'SN-20220015', location: '2F ICU', department: '集中治療室', purchaseDate: '2022-01-15', warrantyExpiry: '2025-01-14', status: 'REPAIR', notes: '', pmdaApprovalNumber: '', pmdaDocUpdatedAt: '', pmdaUpdateAvailable: false, isCleanField: true, cleanFieldCategory: '呼吸器関連', cleanFieldDefaultCount: 3, cleanFieldCurrentCount: 2, cleanFieldSubstituteCount: 1, inspectionItems: [] },
+    { id: 'd4', deviceCode: 'ULT-002', name: '超音波診断装置', category: '診断機器', manufacturer: 'GE ヘルスケア', model: 'Vivid T8', serialNumber: 'SN-20190088', location: '4F 外科病棟', department: '外科', purchaseDate: '2019-07-01', warrantyExpiry: '2024-06-30', status: 'ACTIVE', notes: '', pmdaApprovalNumber: '20100BZX00123000', pmdaDocUpdatedAt: '2023-11-15', pmdaUpdateAvailable: true, isCleanField: true, cleanFieldCategory: '超音波機器', cleanFieldDefaultCount: 2, cleanFieldCurrentCount: 2, cleanFieldSubstituteCount: 0, inspectionItems: [
       { id: 'di5', name: 'プローブ出力（mW）', category: '性能点検', lowerLimit: 10, upperLimit: 50, sortOrder: 0 },
     ]},
   ],
@@ -1757,6 +1773,12 @@ function openDeviceModal(id) {
   if (cleanEl) cleanEl.checked = d ? !!d.isCleanField : false;
   const cleanCatEl = document.getElementById('f-cleanFieldCategory');
   if (cleanCatEl) cleanCatEl.value = d ? (d.cleanFieldCategory || '') : '';
+  const cleanDefaultEl = document.getElementById('f-cleanFieldDefaultCount');
+  if (cleanDefaultEl) cleanDefaultEl.value = d && d.cleanFieldDefaultCount != null ? d.cleanFieldDefaultCount : '';
+  const cleanCurrentEl = document.getElementById('f-cleanFieldCurrentCount');
+  if (cleanCurrentEl) cleanCurrentEl.value = d && d.cleanFieldCurrentCount != null ? d.cleanFieldCurrentCount : '';
+  const cleanSubEl = document.getElementById('f-cleanFieldSubstituteCount');
+  if (cleanSubEl) cleanSubEl.value = d && d.cleanFieldSubstituteCount != null ? d.cleanFieldSubstituteCount : '';
   const cleanWrap = document.getElementById('f-cleanFieldCategory-wrap');
   if (cleanWrap) cleanWrap.classList.toggle('hidden', !(d?.isCleanField));
 
@@ -1841,6 +1863,12 @@ function saveDevice() {
   if (cleanEl) vals.isCleanField = cleanEl.checked;
   const cleanCatEl2 = document.getElementById('f-cleanFieldCategory');
   if (cleanCatEl2) vals.cleanFieldCategory = cleanCatEl2.value;
+  const cleanDefaultEl2 = document.getElementById('f-cleanFieldDefaultCount');
+  if (cleanDefaultEl2) vals.cleanFieldDefaultCount = cleanDefaultEl2.value !== '' ? parseInt(cleanDefaultEl2.value) : null;
+  const cleanCurrentEl2 = document.getElementById('f-cleanFieldCurrentCount');
+  if (cleanCurrentEl2) vals.cleanFieldCurrentCount = cleanCurrentEl2.value !== '' ? parseInt(cleanCurrentEl2.value) : null;
+  const cleanSubEl2 = document.getElementById('f-cleanFieldSubstituteCount');
+  if (cleanSubEl2) vals.cleanFieldSubstituteCount = cleanSubEl2.value !== '' ? parseInt(cleanSubEl2.value) : null;
   // Document URLs from the url inputs
   ['attachment','catalog','manual'].forEach(type => {
     const el = document.getElementById('f-' + docKeyMap[type]);
@@ -2478,23 +2506,30 @@ function renderCleanField() {
           <tr class="text-xs text-gray-500 text-left">
             <th class="px-4 py-2.5">管理番号</th>
             <th class="px-4 py-2.5">機器名</th>
-            <th class="px-4 py-2.5">機器カテゴリ</th>
-            <th class="px-4 py-2.5">メーカー / 型式</th>
+            <th class="px-4 py-2.5 text-center">既定定数</th>
+            <th class="px-4 py-2.5 text-center">現在定数</th>
+            <th class="px-4 py-2.5 text-center">代品数</th>
             <th class="px-4 py-2.5">配備部署</th>
             <th class="px-4 py-2.5">設置場所</th>
             <th class="px-4 py-2.5">状態</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          ${groups[cat].map(d => `<tr class="hover:bg-gray-50 transition-colors">
+          ${groups[cat].map(d => {
+            const defCount = d.cleanFieldDefaultCount != null ? d.cleanFieldDefaultCount : '—';
+            const curCount = d.cleanFieldCurrentCount != null ? d.cleanFieldCurrentCount : '—';
+            const subCount = d.cleanFieldSubstituteCount != null ? d.cleanFieldSubstituteCount : '—';
+            const curColor = (d.cleanFieldCurrentCount != null && d.cleanFieldDefaultCount != null && d.cleanFieldCurrentCount < d.cleanFieldDefaultCount) ? 'text-red-600' : 'text-gray-700';
+            return `<tr class="hover:bg-gray-50 transition-colors">
             <td class="px-4 py-3 font-mono text-xs text-gray-500">${d.deviceCode}</td>
             <td class="px-4 py-3 font-medium text-gray-900">${d.name}</td>
-            <td class="px-4 py-3 text-gray-500 text-xs">${d.category}</td>
-            <td class="px-4 py-3 text-gray-600 text-xs"><div>${d.manufacturer}</div><div class="text-gray-400">${d.model}</div></td>
+            <td class="px-4 py-3 text-center"><span class="text-sm font-medium text-gray-700">${defCount}</span></td>
+            <td class="px-4 py-3 text-center"><span class="text-sm font-medium ${curColor}">${curCount}</span></td>
+            <td class="px-4 py-3 text-center"><span class="text-sm text-gray-600">${subCount}</span></td>
             <td class="px-4 py-3 text-gray-600 text-xs">${d.department||'—'}</td>
             <td class="px-4 py-3 text-gray-600 text-xs">${d.location}</td>
             <td class="px-4 py-3"><span class="inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[d.status]||'bg-gray-100 text-gray-500'}">${STATUS_LABEL[d.status]||d.status}</span></td>
-          </tr>`).join('')}
+          </tr>`;}).join('')}
         </tbody>
       </table>
     </div>
