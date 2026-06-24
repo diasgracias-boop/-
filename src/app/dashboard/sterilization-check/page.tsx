@@ -238,87 +238,86 @@ export default function SterilizationCheckPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <h1 className="text-lg font-bold text-gray-900 mr-2">滅菌前点検</h1>
-
-        {/* Tab switcher */}
-        <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm font-medium mr-auto">
+      {/* Header: 上段タイトル+コントロール / 下段タブ */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-3 px-6 pt-3 pb-1">
+          <h1 className="text-lg font-bold text-gray-900 mr-2">滅菌前点検</h1>
+          {/* Controls: new registration */}
+          {activeTab === "new" && (
+            <div className="flex items-center gap-3 ml-auto">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <select
+                value={timeSlot}
+                onChange={(e) => setTimeSlot(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <button
+                onClick={handleRegister}
+                disabled={saving || selected.filter((s) => s.inspectedBy).length === 0}
+                className="bg-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-40 transition-colors"
+              >
+                {saving ? "登録中..." : "登録"}
+              </button>
+            </div>
+          )}
+          {/* Controls: history */}
+          {activeTab === "history" && (
+            <div className="flex items-center gap-2 ml-auto">
+              <input
+                type="date"
+                value={histDateFilter}
+                onChange={(e) => setHistDateFilter(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <input
+                type="text"
+                value={histSearch}
+                onChange={(e) => setHistSearch(e.target.value)}
+                placeholder="機器名・点検者で検索"
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 w-52"
+              />
+              <select
+                value={histJudgment}
+                onChange={(e) => setHistJudgment(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">判定：すべて</option>
+                <option value="OK">OK</option>
+                <option value="NG">NG</option>
+              </select>
+              <button
+                onClick={() => { setHistDateFilter(""); setHistSearch(""); setHistJudgment(""); }}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              >
+                クリア
+              </button>
+            </div>
+          )}
+        </div>
+        {/* タブ（アンダーライン型） */}
+        <div className="flex px-6">
           <button
             onClick={() => setActiveTab("new")}
-            className={`px-4 py-1.5 transition-colors ${activeTab === "new" ? "bg-teal-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === "new" ? "border-teal-600 text-teal-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
           >
             新規登録
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`px-4 py-1.5 transition-colors ${activeTab === "history" ? "bg-teal-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === "history" ? "border-teal-600 text-teal-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
           >
             点検記録
           </button>
         </div>
-
-        {/* Controls: new registration */}
-        {activeTab === "new" && (
-          <div className="flex items-center gap-3">
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <select
-              value={timeSlot}
-              onChange={(e) => setTimeSlot(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <button
-              onClick={handleRegister}
-              disabled={saving || selected.filter((s) => s.inspectedBy).length === 0}
-              className="bg-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-40 transition-colors"
-            >
-              {saving ? "登録中..." : "登録"}
-            </button>
-            {savedMsg && <span className="text-sm text-teal-700 font-medium">{savedMsg}</span>}
-          </div>
-        )}
-
-        {/* Controls: history */}
-        {activeTab === "history" && (
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={histDateFilter}
-              onChange={(e) => setHistDateFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <input
-              type="text"
-              value={histSearch}
-              onChange={(e) => setHistSearch(e.target.value)}
-              placeholder="機器名・点検者で検索"
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 w-52"
-            />
-            <select
-              value={histJudgment}
-              onChange={(e) => setHistJudgment(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="">判定：すべて</option>
-              <option value="OK">OK</option>
-              <option value="NG">NG</option>
-            </select>
-            <button
-              onClick={() => { setHistDateFilter(""); setHistSearch(""); setHistJudgment(""); }}
-              className="text-sm text-gray-400 hover:text-gray-600 px-2"
-            >
-              クリア
-            </button>
-          </div>
-        )}
       </div>
+
 
       {/* New registration panel */}
       {activeTab === "new" && (

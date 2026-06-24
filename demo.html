@@ -508,37 +508,41 @@
 
     <!-- 滅菌前点検 -->
     <div id="page-sterilization-check" class="hidden" style="flex:1;min-height:0;flex-direction:column">
-      <!-- Header bar -->
-      <div class="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0">
-        <h1 class="text-lg font-bold text-gray-900" style="margin-right:0.5rem">滅菌前点検</h1>
-        <!-- タブ -->
-        <div class="flex border border-gray-200 rounded-lg overflow-hidden text-sm font-medium" style="margin-right:auto">
-          <button id="sc-tab-new-btn" onclick="scShowTab('new')" class="px-4 py-1.5 bg-teal-600 text-white transition-colors">新規登録</button>
-          <button id="sc-tab-hist-btn" onclick="scShowTab('history')" class="px-4 py-1.5 bg-white text-gray-600 hover:bg-gray-50 transition-colors">点検記録</button>
+      <!-- Header bar: title + tabs + controls -->
+      <div class="flex-shrink-0 bg-white border-b border-gray-200">
+        <!-- 上段: タイトル + コントロール -->
+        <div class="flex items-center gap-3 px-6 pt-3 pb-1">
+          <h1 class="text-lg font-bold text-gray-900" style="margin-right:0.5rem">滅菌前点検</h1>
+          <!-- 新規登録タブ用コントロール -->
+          <div id="sc-new-controls" style="display:flex;align-items:center;gap:0.75rem;margin-left:auto">
+            <input type="date" id="sc-date" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+            <select id="sc-timeslot" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+              <option>午前（第1回）</option>
+              <option>午前（第2回）</option>
+              <option>午後（第1回）</option>
+              <option>午後（第2回）</option>
+              <option>夜間</option>
+            </select>
+            <button onclick="scRegister()" id="sc-register-btn" class="text-sm font-medium rounded-lg px-4 py-1.5 transition-colors" style="background:#0d9488;color:#fff;opacity:0.4;pointer-events:none">登録</button>
+          </div>
+          <!-- 点検記録タブ用コントロール -->
+          <div id="sc-hist-controls" style="display:none;align-items:center;gap:0.5rem;margin-left:auto">
+            <input type="date" id="sc-hist-date" oninput="renderScHistory()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+            <input type="text" id="sc-hist-search" oninput="renderScHistory()" placeholder="機器名・点検者で検索" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm" style="width:13rem">
+            <select id="sc-hist-judgment" onchange="renderScHistory()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+              <option value="">判定：すべて</option>
+              <option value="OK">OK</option>
+              <option value="NG">NG</option>
+            </select>
+            <button onclick="scHistClear()" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">クリア</button>
+          </div>
         </div>
-        <!-- 新規登録タブ用コントロール -->
-        <div id="sc-new-controls" class="flex items-center gap-3">
-          <input type="date" id="sc-date" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-          <select id="sc-timeslot" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-            <option>午前（第1回）</option>
-            <option>午前（第2回）</option>
-            <option>午後（第1回）</option>
-            <option>午後（第2回）</option>
-            <option>夜間</option>
-          </select>
-          <button onclick="scRegister()" id="sc-register-btn" class="bg-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors" style="opacity:0.4;pointer-events:none">登録</button>
-          <span id="sc-saved-msg" class="hidden text-sm text-teal-700 font-medium"></span>
-        </div>
-        <!-- 点検記録タブ用コントロール -->
-        <div id="sc-hist-controls" class="hidden flex items-center gap-2">
-          <input type="date" id="sc-hist-date" oninput="renderScHistory()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-          <input type="text" id="sc-hist-search" oninput="renderScHistory()" placeholder="機器名・点検者で検索" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm" style="width:14rem">
-          <select id="sc-hist-judgment" onchange="renderScHistory()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-            <option value="">判定：すべて</option>
-            <option value="OK">OK</option>
-            <option value="NG">NG</option>
-          </select>
-          <button onclick="scHistClear()" class="text-sm text-gray-400 hover:text-gray-600 px-2">クリア</button>
+        <!-- 下段: タブ -->
+        <div class="flex px-6" style="gap:0">
+          <button id="sc-tab-new-btn" onclick="scShowTab('new')"
+            style="padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;color:#0d9488;border-bottom:2px solid #0d9488;background:none;cursor:pointer;transition:all .15s">新規登録</button>
+          <button id="sc-tab-hist-btn" onclick="scShowTab('history')"
+            style="padding:0.5rem 1rem;font-size:0.875rem;font-weight:500;color:#6b7280;border-bottom:2px solid transparent;background:none;cursor:pointer;transition:all .15s">点検記録</button>
         </div>
       </div>
 
@@ -3487,10 +3491,14 @@ function scShowTab(tab) {
   document.getElementById('sc-panel-history').style.display = isNew ? 'none' : 'flex';
   document.getElementById('sc-new-controls').style.display = isNew ? 'flex' : 'none';
   document.getElementById('sc-hist-controls').style.display = isNew ? 'none' : 'flex';
-  const activeBtn = 'bg-teal-600 text-white';
-  const inactiveBtn = 'bg-white text-gray-600 hover:bg-gray-50';
-  document.getElementById('sc-tab-new-btn').className = `px-4 py-1.5 transition-colors ${isNew ? activeBtn : inactiveBtn}`;
-  document.getElementById('sc-tab-hist-btn').className = `px-4 py-1.5 transition-colors ${!isNew ? activeBtn : inactiveBtn}`;
+  const newBtn = document.getElementById('sc-tab-new-btn');
+  const histBtn = document.getElementById('sc-tab-hist-btn');
+  newBtn.style.color = isNew ? '#0d9488' : '#6b7280';
+  newBtn.style.fontWeight = isNew ? '600' : '500';
+  newBtn.style.borderBottom = isNew ? '2px solid #0d9488' : '2px solid transparent';
+  histBtn.style.color = !isNew ? '#0d9488' : '#6b7280';
+  histBtn.style.fontWeight = !isNew ? '600' : '500';
+  histBtn.style.borderBottom = !isNew ? '2px solid #0d9488' : '2px solid transparent';
   if (!isNew) renderScHistory();
 }
 
