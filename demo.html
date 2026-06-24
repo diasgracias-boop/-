@@ -3468,10 +3468,7 @@ function scRegister() {
   });
   scSelected = scSelected.filter(s => !s.inspectedBy);
   renderSterilizationList();
-  const msg = document.getElementById('sc-saved-msg');
-  msg.textContent = `${toSave.length}件を登録しました`;
-  msg.classList.remove('hidden');
-  setTimeout(() => msg.classList.add('hidden'), 3000);
+  scShowTab('history');
 }
 
 // Close candidates on outside click

@@ -193,9 +193,9 @@ export default function SterilizationCheckPage() {
       )
     );
     setSaving(false);
-    setSavedMsg(`${toSave.length}件を登録しました`);
     setSelected((prev) => prev.filter((s) => !s.inspectedBy));
-    setTimeout(() => setSavedMsg(""), 3000);
+    await loadHistory();
+    setActiveTab("history");
   }, [selected, date, timeSlot]);
 
   function openEdit(r: CheckRecord) {
