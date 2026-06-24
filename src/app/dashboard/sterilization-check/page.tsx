@@ -16,6 +16,7 @@ interface SelectedDevice {
   category: string | null;
   inspectedBy: string;
   inspectedAt: string | null;
+  judgment: "OK" | "NG";
   rowChecked: boolean;
 }
 
@@ -129,7 +130,7 @@ export default function SterilizationCheckPage() {
       setSelected((prev) =>
         prev.some((s) => s.deviceId === d.id)
           ? prev
-          : [...prev, { deviceId: d.id, name: d.name, deviceCode: d.deviceCode, category: d.cleanFieldCategory, inspectedBy: "", inspectedAt: null, rowChecked: false }]
+          : [...prev, { deviceId: d.id, name: d.name, deviceCode: d.deviceCode, category: d.cleanFieldCategory, inspectedBy: "", inspectedAt: null, judgment: "OK" as const, rowChecked: false }]
       );
     } else {
       setSelected((prev) => prev.filter((s) => s.deviceId !== d.id));
@@ -144,7 +145,7 @@ export default function SterilizationCheckPage() {
     setSelected((prev) =>
       prev.map((s) =>
         s.deviceId === deviceId
-          ? { ...s, inspectedBy: inspector, inspectedAt: inspector ? nowStr() : null }
+          ? { ...s, inspectedBy: inspector, inspectedAt: inspector ? nowStr() : null, judgment: inspector ? "OK" as const : s.judgment }
           : s
       )
     );
@@ -184,7 +185,7 @@ export default function SterilizationCheckPage() {
           body: JSON.stringify({
             deviceId: s.deviceId,
             inspectedBy: s.inspectedBy,
-            judgment: "OK",
+            judgment: s.judgment,
             notes: `${date} ${timeSlot}`,
             inspectedAt: s.inspectedAt ?? `${date}T00:00`,
           }),
@@ -416,6 +417,7 @@ export default function SterilizationCheckPage() {
                       <th className="px-3 py-2 text-center w-12">CE</th>
                       <th className="px-3 py-2 w-36">点検者</th>
                       <th className="px-3 py-2 w-32">点検日時</th>
+                      <th className="px-3 py-2 text-center w-20">判定</th>
                       <th className="px-3 py-2 w-8"></th>
                     </tr>
                   </thead>
@@ -444,6 +446,18 @@ export default function SterilizationCheckPage() {
                         </td>
                         <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
                           {s.inspectedAt ? fmtDt(s.inspectedAt) : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          {s.inspectedBy ? (
+                            <button
+                              onClick={() => setSelected((prev) => prev.map((x) => x.deviceId === s.deviceId ? { ...x, judgment: x.judgment === "OK" ? "NG" : "OK" } : x))}
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${s.judgment === "OK" ? "bg-teal-50 text-teal-700 hover:bg-teal-100" : "bg-red-50 text-red-700 hover:bg-red-100"}`}
+                            >
+                              {s.judgment}
+                            </button>
+                          ) : (
+                            <span className="text-gray-300 text-xs">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-2">
                           <button onClick={() => removeDevice(s.deviceId)} className="text-gray-300 hover:text-red-400 transition-colors">

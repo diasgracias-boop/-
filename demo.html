@@ -580,6 +580,7 @@
                   <th class="px-3 py-2 text-center" style="width:3rem">CE</th>
                   <th class="px-3 py-2" style="width:9rem">点検者</th>
                   <th class="px-3 py-2" style="width:8rem">点検日時</th>
+                  <th class="px-3 py-2 text-center" style="width:5rem">判定</th>
                   <th class="px-3 py-2" style="width:2rem"></th>
                 </tr>
               </thead>
@@ -3362,6 +3363,10 @@ function renderSterilizationList() {
         </select>
       </td>
       <td class="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">${dtStr}</td>
+      <td class="px-3 py-2 text-center">${s.inspectedBy
+        ? `<button onclick="scToggleJudgment(${idx})" class="px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${s.judgment === 'OK' ? 'bg-teal-50 text-teal-700 hover:bg-teal-100' : 'bg-red-50 text-red-700 hover:bg-red-100'}">${s.judgment}</button>`
+        : '<span class="text-gray-300 text-xs">—</span>'
+      }</td>
       <td class="px-3 py-2"><button onclick="scRemove(${idx})" class="text-gray-300 hover:text-red-400 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button></td>
@@ -3378,6 +3383,11 @@ function scNowStr() {
 function scSetInspector(idx, val) {
   scSelected[idx].inspectedBy = val;
   scSelected[idx].inspectedAt = val ? scNowStr() : null;
+  if (val) scSelected[idx].judgment = 'OK';
+  renderSterilizationList();
+}
+function scToggleJudgment(idx) {
+  scSelected[idx].judgment = scSelected[idx].judgment === 'OK' ? 'NG' : 'OK';
   renderSterilizationList();
 }
 function scToggleRow(idx) {
@@ -3433,7 +3443,7 @@ function scAddDevice(deviceId, checked) {
   const d = db.devices.find(x => x.id === deviceId);
   if (!d) return;
   if (checked && !scSelected.some(s => s.deviceId === deviceId)) {
-    scSelected.push({ deviceId, name: d.name, deviceCode: d.deviceCode, category: d.cleanFieldCategory || '', inspectedBy: '', inspectedAt: null, rowChecked: false });
+    scSelected.push({ deviceId, name: d.name, deviceCode: d.deviceCode, category: d.cleanFieldCategory || '', inspectedBy: '', inspectedAt: null, judgment: 'OK', rowChecked: false });
   } else if (!checked) {
     scSelected = scSelected.filter(s => s.deviceId !== deviceId);
   }
@@ -3454,7 +3464,7 @@ function scRegister() {
   const toSave = scSelected.filter(s => s.inspectedBy);
   if (toSave.length === 0) return;
   toSave.forEach(s => {
-    db.sterilizationChecks.push({ id: uid(), deviceId: s.deviceId, inspectedBy: s.inspectedBy, judgment: 'OK', notes: `${date} ${timeSlot}`, inspectedAt: s.inspectedAt ?? `${date}T00:00` });
+    db.sterilizationChecks.push({ id: uid(), deviceId: s.deviceId, inspectedBy: s.inspectedBy, judgment: s.judgment || 'OK', notes: `${date} ${timeSlot}`, inspectedAt: s.inspectedAt ?? `${date}T00:00` });
   });
   scSelected = scSelected.filter(s => !s.inspectedBy);
   renderSterilizationList();
