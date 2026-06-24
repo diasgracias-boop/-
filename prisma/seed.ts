@@ -1,7 +1,22 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+function createPrisma() {
+  const url = process.env.DATABASE_URL!;
+  if (!url) throw new Error("DATABASE_URL is not set");
+  if (url.startsWith("file:") || url.startsWith("libsql:")) {
+    const { createClient } = require("@libsql/client");
+    const { PrismaLibSql } = require("@prisma/adapter-libsql");
+    const adapter = new PrismaLibSql(createClient({ url }));
+    return new PrismaClient({ adapter });
+  }
+  const { PrismaPg } = require("@prisma/adapter-pg");
+  const adapter = new PrismaPg({ connectionString: url });
+  return new PrismaClient({ adapter });
+}
+
+const prisma = createPrisma();
 
 async function main() {
   const adminPassword = await bcrypt.hash("admin1234", 10);
@@ -116,6 +131,113 @@ async function main() {
       result: "異常なし。すべての機能が正常に動作することを確認。",
       nextSchedule: tomorrow,
     },
+  });
+
+  // 清潔野機器（滅菌前点検用）
+  const cfDevice1 = await prisma.device.upsert({
+    where: { deviceCode: "CF-001" },
+    update: {},
+    create: {
+      deviceCode: "CF-001",
+      name: "硬性内視鏡（腹腔鏡）",
+      category: "内視鏡",
+      manufacturer: "オリンパス",
+      model: "A57090A",
+      serialNumber: "CF-SN-001",
+      location: "手術室",
+      status: "ACTIVE",
+      isCleanField: true,
+      cleanFieldCategory: "内視鏡",
+      cleanFieldDefaultCount: 2,
+      cleanFieldCurrentCount: 2,
+    },
+  });
+
+  const cfDevice2 = await prisma.device.upsert({
+    where: { deviceCode: "CF-002" },
+    update: {},
+    create: {
+      deviceCode: "CF-002",
+      name: "把持鉗子",
+      category: "手術器具",
+      manufacturer: "カールストルツ",
+      model: "33310KL",
+      serialNumber: "CF-SN-002",
+      location: "手術室",
+      status: "ACTIVE",
+      isCleanField: true,
+      cleanFieldCategory: "鉗子類",
+      cleanFieldDefaultCount: 4,
+      cleanFieldCurrentCount: 4,
+    },
+  });
+
+  const cfDevice3 = await prisma.device.upsert({
+    where: { deviceCode: "CF-003" },
+    update: {},
+    create: {
+      deviceCode: "CF-003",
+      name: "超音波凝固切開装置",
+      category: "エネルギーデバイス",
+      manufacturer: "エシコン",
+      model: "HARMONIC ACE+7",
+      serialNumber: "CF-SN-003",
+      location: "手術室",
+      status: "ACTIVE",
+      isCleanField: true,
+      cleanFieldCategory: "エネルギー",
+      cleanFieldDefaultCount: 1,
+      cleanFieldCurrentCount: 1,
+    },
+  });
+
+  // 滅菌前点検サンプルデータ
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const todayStr = today.toISOString().slice(0, 10);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+  await prisma.sterilizationCheck.createMany({
+    data: [
+      {
+        deviceId: cfDevice1.id,
+        inspectedBy: "ME1",
+        judgment: "OK",
+        notes: `${todayStr} 午前（第1回）`,
+        inspectedAt: new Date(`${todayStr}T08:30`),
+      },
+      {
+        deviceId: cfDevice2.id,
+        inspectedBy: "ME1",
+        judgment: "OK",
+        notes: `${todayStr} 午前（第1回）`,
+        inspectedAt: new Date(`${todayStr}T08:32`),
+      },
+      {
+        deviceId: cfDevice3.id,
+        inspectedBy: "ME2",
+        judgment: "NG",
+        notes: `${todayStr} 午前（第1回）`,
+        inspectedAt: new Date(`${todayStr}T08:35`),
+      },
+      {
+        deviceId: cfDevice1.id,
+        inspectedBy: "ME3",
+        judgment: "OK",
+        notes: `${yesterdayStr} 午後（第1回）`,
+        inspectedAt: new Date(`${yesterdayStr}T14:00`),
+      },
+      {
+        deviceId: cfDevice2.id,
+        inspectedBy: "ME3",
+        judgment: "OK",
+        notes: `${yesterdayStr} 午後（第1回）`,
+        inspectedAt: new Date(`${yesterdayStr}T14:05`),
+      },
+    ],
+    skipDuplicates: false,
   });
 
   console.log("シードデータの投入が完了しました");

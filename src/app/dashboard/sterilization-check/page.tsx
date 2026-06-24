@@ -102,10 +102,15 @@ export default function SterilizationCheckPage() {
 
   const loadHistory = useCallback(async () => {
     setHistLoading(true);
-    const r = await fetch("/api/sterilization-checks");
-    const data = await r.json();
-    setRecords(data);
-    setHistLoading(false);
+    try {
+      const r = await fetch("/api/sterilization-checks");
+      const data = await r.json();
+      setRecords(Array.isArray(data) ? data : []);
+    } catch {
+      setRecords([]);
+    } finally {
+      setHistLoading(false);
+    }
   }, []);
 
   useEffect(() => {
