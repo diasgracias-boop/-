@@ -937,15 +937,40 @@
 <!-- 一括点検入力モーダル -->
 <div id="modal-bulk-inspection" class="hidden modal-overlay">
   <!-- Step 1: 機器選択 -->
-  <div id="bulk-step-select" class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 flex flex-col" style="max-height:90vh">
-    <div class="p-5 border-b border-gray-200 flex-shrink-0 flex items-center justify-between">
-      <div>
-        <h2 class="text-base font-semibold text-gray-900">一括点検入力 — 機器を選択</h2>
-        <p class="text-sm text-gray-500 mt-0.5" id="bulk-select-summary">0件選択中</p>
+  <div id="bulk-step-select" class="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col" style="max-height:92vh">
+    <div class="p-5 border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900">一括点検入力 — 機器を選択</h2>
+          <p class="text-sm text-gray-500 mt-0.5" id="bulk-select-summary">0件選択中</p>
+        </div>
+        <button onclick="closeModal('modal-bulk-inspection')" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
-      <button onclick="closeModal('modal-bulk-inspection')" class="text-gray-400 hover:text-gray-600">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
+      <!-- 検索フィルター -->
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div class="relative">
+          <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/></svg>
+          <input type="text" id="bulk-search-name" oninput="renderBulkSelectStep()" placeholder="機器名・管理番号"
+            class="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <select id="bulk-search-dept" onchange="renderBulkSelectStep()"
+          class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700">
+          <option value="">配備部署 すべて</option>
+        </select>
+        <select id="bulk-search-location" onchange="renderBulkSelectStep()"
+          class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700">
+          <option value="">設置場所 すべて</option>
+        </select>
+        <select id="bulk-search-category" onchange="renderBulkSelectStep()"
+          class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700">
+          <option value="">カテゴリ すべて</option>
+        </select>
+      </div>
+      <div id="bulk-clear-filter" class="hidden mt-2">
+        <button type="button" onclick="bulkClearFilter()" class="text-xs text-blue-600 hover:underline">絞り込みを解除</button>
+      </div>
     </div>
     <div class="flex-1 overflow-y-auto">
       <table class="w-full text-sm">
@@ -953,8 +978,8 @@
           <tr class="text-xs text-gray-500">
             <th class="px-4 py-2.5 w-10"><input type="checkbox" id="bulk-check-all" onchange="bulkToggleAll(this.checked)" class="w-4 h-4 accent-blue-600 cursor-pointer" /></th>
             <th class="px-4 py-2.5 text-left">機器名</th>
+            <th class="px-4 py-2.5 text-left">配備部署</th>
             <th class="px-4 py-2.5 text-left">設置場所</th>
-            <th class="px-4 py-2.5 text-left">点検内容</th>
             <th class="px-4 py-2.5 text-center">予定日</th>
             <th class="px-4 py-2.5 text-center">残り</th>
           </tr>
@@ -962,7 +987,8 @@
         <tbody id="bulk-select-tbody"></tbody>
       </table>
     </div>
-    <div class="flex gap-3 p-4 border-t border-gray-200 flex-shrink-0">
+    <div class="flex gap-3 p-4 border-t border-gray-200 flex-shrink-0 items-center">
+      <button type="button" id="bulk-select-filtered-btn" onclick="bulkSelectFiltered()" class="hidden text-xs text-blue-600 border border-blue-300 rounded-lg px-3 py-2 hover:bg-blue-50 whitespace-nowrap">表示中を全選択</button>
       <button type="button" onclick="bulkGoToInput()" id="bulk-next-btn" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">点検入力へ →</button>
       <button type="button" onclick="closeModal('modal-bulk-inspection')" class="px-6 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
     </div>
@@ -2386,20 +2412,70 @@ let bulkColData = [];
 function openBulkInspectionModal() {
   const activeSchedules = db.inspections.filter(s => !s.completed);
   bulkSelectedIds = new Set(activeSchedules.map(s => s.id));
+  // populate filter dropdowns with unique values
+  const depts = [...new Set(activeSchedules.map(s => db.devices.find(d=>d.id===s.deviceId)?.department).filter(Boolean))];
+  const locs  = [...new Set(activeSchedules.map(s => db.devices.find(d=>d.id===s.deviceId)?.location).filter(Boolean))];
+  const cats  = [...new Set(activeSchedules.map(s => db.devices.find(d=>d.id===s.deviceId)?.category).filter(Boolean))];
+  const deptSel = document.getElementById('bulk-search-dept');
+  const locSel  = document.getElementById('bulk-search-location');
+  const catSel  = document.getElementById('bulk-search-category');
+  deptSel.innerHTML = '<option value="">配備部署 すべて</option>' + depts.map(v=>`<option value="${v}">${v}</option>`).join('');
+  locSel.innerHTML  = '<option value="">設置場所 すべて</option>' + locs.map(v=>`<option value="${v}">${v}</option>`).join('');
+  catSel.innerHTML  = '<option value="">カテゴリ すべて</option>' + cats.map(v=>`<option value="${v}">${v}</option>`).join('');
+  document.getElementById('bulk-search-name').value = '';
+  deptSel.value = ''; locSel.value = ''; catSel.value = '';
   renderBulkSelectStep();
   document.getElementById('bulk-step-select').classList.remove('hidden');
   document.getElementById('bulk-step-input').classList.add('hidden');
   document.getElementById('modal-bulk-inspection').classList.remove('hidden');
 }
 
+function bulkGetFiltered() {
+  const name     = document.getElementById('bulk-search-name')?.value ?? '';
+  const dept     = document.getElementById('bulk-search-dept')?.value ?? '';
+  const location = document.getElementById('bulk-search-location')?.value ?? '';
+  const category = document.getElementById('bulk-search-category')?.value ?? '';
+  return db.inspections.filter(s => {
+    if (s.completed) return false;
+    const device = db.devices.find(d => d.id === s.deviceId);
+    if (name && !device?.name?.includes(name) && !device?.deviceCode?.includes(name)) return false;
+    if (dept && device?.department !== dept) return false;
+    if (location && device?.location !== location) return false;
+    if (category && device?.category !== category) return false;
+    return true;
+  });
+}
+
+function bulkClearFilter() {
+  document.getElementById('bulk-search-name').value = '';
+  document.getElementById('bulk-search-dept').value = '';
+  document.getElementById('bulk-search-location').value = '';
+  document.getElementById('bulk-search-category').value = '';
+  renderBulkSelectStep();
+}
+
+function bulkSelectFiltered() {
+  bulkGetFiltered().forEach(s => bulkSelectedIds.add(s.id));
+  renderBulkSelectStep();
+}
+
 function renderBulkSelectStep() {
+  const filtered = bulkGetFiltered();
   const activeSchedules = db.inspections.filter(s => !s.completed);
+  const isFiltered = !!(document.getElementById('bulk-search-name')?.value || document.getElementById('bulk-search-dept')?.value || document.getElementById('bulk-search-location')?.value || document.getElementById('bulk-search-category')?.value);
   const tbody = document.getElementById('bulk-select-tbody');
   const summary = document.getElementById('bulk-select-summary');
-  summary.textContent = `${bulkSelectedIds.size}件選択中`;
+  summary.innerHTML = `${bulkSelectedIds.size}件選択中` + (isFiltered ? ` <span class="text-blue-600">（${filtered.length}件表示中）</span>` : '');
+  const clearDiv = document.getElementById('bulk-clear-filter');
+  if (clearDiv) clearDiv.classList.toggle('hidden', !isFiltered);
+  const filteredBtn = document.getElementById('bulk-select-filtered-btn');
+  if (filteredBtn) filteredBtn.classList.toggle('hidden', !isFiltered || filtered.length === 0);
   const allCheck = document.getElementById('bulk-check-all');
-  if (allCheck) allCheck.checked = bulkSelectedIds.size === activeSchedules.length;
-  tbody.innerHTML = activeSchedules.map(s => {
+  const allFilteredSelected = filtered.length > 0 && filtered.every(s => bulkSelectedIds.has(s.id));
+  if (allCheck) allCheck.checked = allFilteredSelected;
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400 text-sm">該当する機器がありません</td></tr>`
+    : filtered.map(s => {
     const device = db.devices.find(d => d.id === s.deviceId);
     const days = Math.ceil((new Date(s.scheduledAt).getTime() - Date.now()) / 86400000);
     const isOverdue = days < 0;
@@ -2415,9 +2491,10 @@ function renderBulkSelectStep() {
       <td class="px-4 py-2.5">
         <div class="font-medium text-gray-900 text-sm">${device?.name??''}</div>
         <div class="text-xs text-gray-400 font-mono">${device?.deviceCode??''}</div>
+        <div class="text-xs text-gray-400">${device?.category??''}</div>
       </td>
-      <td class="px-4 py-2.5 text-gray-600 text-sm">${device?.location??''}</td>
-      <td class="px-4 py-2.5 text-gray-600 text-sm">${s.description}</td>
+      <td class="px-4 py-2.5 text-gray-600 text-xs">${device?.department??'—'}</td>
+      <td class="px-4 py-2.5 text-gray-600 text-xs">${device?.location??''}</td>
       <td class="px-4 py-2.5 text-center text-xs text-gray-500">${new Date(s.scheduledAt).toLocaleDateString('ja-JP')}</td>
       <td class="px-4 py-2.5 text-center">${daysText}</td>
     </tr>`;
@@ -2433,9 +2510,9 @@ function bulkToggleSelectById(id) {
 }
 
 function bulkToggleAll(checked) {
-  const activeSchedules = db.inspections.filter(s => !s.completed);
-  if (checked) activeSchedules.forEach(s => bulkSelectedIds.add(s.id));
-  else bulkSelectedIds.clear();
+  const filtered = bulkGetFiltered();
+  if (checked) filtered.forEach(s => bulkSelectedIds.add(s.id));
+  else filtered.forEach(s => bulkSelectedIds.delete(s.id));
   renderBulkSelectStep();
 }
 

@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       ...(overdue === "true" && { scheduledAt: { lt: now } }),
     },
     include: {
-      device: { select: { name: true, deviceCode: true, location: true } },
+      device: { select: { name: true, deviceCode: true, location: true, department: true, category: true } },
       items: { orderBy: { createdAt: "asc" } },
     },
     orderBy: { scheduledAt: "asc" },

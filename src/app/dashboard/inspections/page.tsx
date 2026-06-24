@@ -21,7 +21,7 @@ interface Schedule {
   intervalDays: number;
   description: string;
   completed: boolean;
-  device: { name: string; deviceCode: string; location: string };
+  device: { name: string; deviceCode: string; location: string; department: string | null; category: string };
   items: InspectionItem[];
 }
 
