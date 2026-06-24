@@ -73,6 +73,7 @@ export default function SterilizationCheckPage() {
   // --- History state ---
   const [records, setRecords] = useState<CheckRecord[]>([]);
   const [histLoading, setHistLoading] = useState(false);
+  const [seedingDemo, setSeedingDemo] = useState(false);
   const [histDateFilter, setHistDateFilter] = useState("");
   const [histSearch, setHistSearch] = useState("");
   const [histJudgment, setHistJudgment] = useState("");
@@ -117,10 +118,45 @@ export default function SterilizationCheckPage() {
     if (activeTab === "history") loadHistory();
   }, [activeTab, loadHistory]);
 
+  const seedDemoData = useCallback(async () => {
+    setSeedingDemo(true);
+    try {
+      const cfDevices = await fetch("/api/devices/clean-field").then((r) => r.json());
+      if (!Array.isArray(cfDevices) || cfDevices.length === 0) {
+        alert("清潔野機器が登録されていません。先に機器を登録してください。");
+        return;
+      }
+      const today = todayStr();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yday = yesterday.toISOString().split("T")[0];
+      const samples = [
+        { deviceId: cfDevices[0]?.id, inspectedBy: "ME1", judgment: "OK", notes: `${today} 午前（第1回）`, inspectedAt: `${today}T08:30` },
+        { deviceId: cfDevices[1]?.id ?? cfDevices[0]?.id, inspectedBy: "ME1", judgment: "OK", notes: `${today} 午前（第1回）`, inspectedAt: `${today}T08:32` },
+        { deviceId: cfDevices[2]?.id ?? cfDevices[0]?.id, inspectedBy: "ME2", judgment: "NG", notes: `${today} 午前（第1回）`, inspectedAt: `${today}T08:35` },
+        { deviceId: cfDevices[0]?.id, inspectedBy: "ME3", judgment: "OK", notes: `${yday} 午後（第1回）`, inspectedAt: `${yday}T14:00` },
+        { deviceId: cfDevices[1]?.id ?? cfDevices[0]?.id, inspectedBy: "ME3", judgment: "OK", notes: `${yday} 午後（第1回）`, inspectedAt: `${yday}T14:05` },
+      ];
+      await Promise.all(
+        samples.filter((s) => s.deviceId).map((s) =>
+          fetch("/api/sterilization-checks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(s),
+          })
+        )
+      );
+      await loadHistory();
+    } finally {
+      setSeedingDemo(false);
+    }
+  }, [loadHistory]);
+
   function parseGroup(r: CheckRecord) {
     const m = (r.notes || "").match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
     if (m) return { date: m[1], timeslot: m[2] };
-    return { date: r.inspectedAt.slice(0, 10), timeslot: r.notes || "—" };
+    const dateStr = r.inspectedAt ? r.inspectedAt.slice(0, 10) : "不明";
+    return { date: dateStr, timeslot: r.notes || "—" };
   }
 
   const filteredRecords = records.filter((r) => {
@@ -529,7 +565,18 @@ export default function SterilizationCheckPage() {
           {histLoading ? (
             <div className="flex items-center justify-center h-32 text-gray-400 text-sm">読み込み中...</div>
           ) : filteredRecords.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">記録がありません</div>
+            <div className="flex flex-col items-center justify-center h-48 gap-3">
+              <p className="text-gray-400 text-sm">{records.length === 0 ? "点検記録がまだありません" : "該当する記録がありません"}</p>
+              {records.length === 0 && (
+                <button
+                  onClick={seedDemoData}
+                  disabled={seedingDemo}
+                  className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 disabled:opacity-40 transition-colors"
+                >
+                  {seedingDemo ? "サンプルデータ追加中..." : "サンプルデータを追加"}
+                </button>
+              )}
+            </div>
           ) : (
             <table className="w-full text-sm bg-white">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">

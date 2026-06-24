@@ -609,7 +609,10 @@
           </thead>
           <tbody id="sc-hist-tbody" class="divide-y divide-gray-100"></tbody>
         </table>
-        <div id="sc-hist-empty" class="hidden flex items-center justify-center text-gray-400 text-sm" style="height:8rem">記録がありません</div>
+        <div id="sc-hist-empty" class="hidden flex-col items-center justify-center gap-3 text-gray-400 text-sm" style="height:12rem">
+          <p id="sc-hist-empty-msg">点検記録がまだありません</p>
+          <button id="sc-seed-btn" onclick="scSeedDemo()" style="display:none;padding:0.5rem 1rem;background:#0d9488;color:#fff;border-radius:0.5rem;font-size:0.875rem;cursor:pointer">サンプルデータを追加</button>
+        </div>
       </div>
     </div>
 
@@ -3577,10 +3580,13 @@ function renderScHistory() {
   const empty = document.getElementById('sc-hist-empty');
   if (groups.length === 0) {
     tbody.innerHTML = '';
-    empty.classList.remove('hidden');
+    empty.style.display = 'flex';
+    const hasFilter = dateFilter || searchFilter || judgmentFilter;
+    document.getElementById('sc-hist-empty-msg').textContent = hasFilter ? '該当する記録がありません' : '点検記録がまだありません';
+    document.getElementById('sc-seed-btn').style.display = (hasFilter || db.sterilizationChecks.length > 0) ? 'none' : 'block';
     return;
   }
-  empty.classList.add('hidden');
+  empty.style.display = 'none';
 
   tbody.innerHTML = groups.map(g => {
     const key = `${g.date}__${g.timeslot}`;
@@ -3596,6 +3602,21 @@ function renderScHistory() {
       <td class="px-4 py-3 text-right text-gray-300 text-xs">›</td>
     </tr>`;
   }).join('');
+}
+
+function scSeedDemo() {
+  const cfDevs = db.devices.filter(d => d.isCleanField);
+  if (cfDevs.length === 0) { alert('清潔野機器がありません'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  const yday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+  [
+    { deviceId: cfDevs[0]?.id, inspectedBy:'ME1', judgment:'OK', notes:`${today} 午前（第1回）`, inspectedAt:`${today}T08:30` },
+    { deviceId: cfDevs[1]?.id||cfDevs[0]?.id, inspectedBy:'ME1', judgment:'OK', notes:`${today} 午前（第1回）`, inspectedAt:`${today}T08:32` },
+    { deviceId: cfDevs[2]?.id||cfDevs[0]?.id, inspectedBy:'ME2', judgment:'NG', notes:`${today} 午前（第1回）`, inspectedAt:`${today}T08:35` },
+    { deviceId: cfDevs[0]?.id, inspectedBy:'ME3', judgment:'OK', notes:`${yday} 午後（第1回）`, inspectedAt:`${yday}T14:00` },
+    { deviceId: cfDevs[1]?.id||cfDevs[0]?.id, inspectedBy:'ME3', judgment:'OK', notes:`${yday} 午後（第1回）`, inspectedAt:`${yday}T14:05` },
+  ].forEach(s => { if(s.deviceId) db.sterilizationChecks.push({id:uid(), ...s}); });
+  renderScHistory();
 }
 
 function scHistClear() {
