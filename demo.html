@@ -2582,6 +2582,14 @@ function cleanFieldGroupDevices(devices) {
   }
   return Array.from(map.values());
 }
+const cfOpenState = {};
+function cleanFieldToggle(catId) {
+  cfOpenState[catId] = !cfOpenState[catId];
+  const body = document.getElementById('cf-body-' + catId);
+  const arrow = document.getElementById('cf-arrow-' + catId);
+  if (body) body.style.display = cfOpenState[catId] ? '' : 'none';
+  if (arrow) arrow.style.transform = cfOpenState[catId] ? 'rotate(90deg)' : '';
+}
 function renderCleanField() {
   const cleanDevices = db.devices.filter(d => d.isCleanField && d.status !== 'RETIRED');
   const countEl = document.getElementById('clean-field-count');
@@ -2622,47 +2630,47 @@ function renderCleanField() {
     shortageEl.classList.toggle('hidden', totalShortage === 0);
   }
 
-  content.innerHTML = sortedKeys.map(cat => {
-    const rows = cleanFieldGroupDevices(groups[cat]);
-    const catShortage = rows.filter(r => r.currentCount != null && r.defaultCount != null && r.currentCount < r.defaultCount).length;
-    return `
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden mb-3">
-      <div class="bg-teal-50 border-b border-teal-100 px-3 py-2 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
-          <span class="text-xs font-semibold text-teal-800">${cat}</span>
-          <span class="text-xs text-teal-500">${groups[cat].length} 台 / ${rows.length} 種</span>
+  // 5-column grid of category accordion cards
+  content.innerHTML = `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start">` +
+    sortedKeys.map((cat, i) => {
+      const rows = cleanFieldGroupDevices(groups[cat]);
+      const catShortage = rows.filter(r => r.currentCount != null && r.defaultCount != null && r.currentCount < r.defaultCount).length;
+      const catId = 'cat' + i;
+      cfOpenState[catId] = true; // default open
+      return `
+      <div style="background:#fff;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden">
+        <button type="button" onclick="cleanFieldToggle('${catId}')"
+          style="width:100%;background:#f0fdfa;padding:7px 10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:none;border-bottom:1px solid #ccfbf1;text-align:left">
+          <div style="display:flex;align-items:center;gap:5px;min-width:0">
+            <svg id="cf-arrow-${catId}" style="width:10px;height:10px;color:#14b8a6;flex-shrink:0;transition:transform .15s;transform:rotate(90deg)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span style="font-size:11px;font-weight:600;color:#0f766e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cat}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:4px">
+            ${catShortage > 0 ? `<span style="font-size:9px;background:#fee2e2;color:#dc2626;font-weight:600;padding:1px 5px;border-radius:9999px">不足${catShortage}</span>` : ''}
+            <span style="font-size:9px;color:#5eead4">${rows.length}種</span>
+          </div>
+        </button>
+        <div id="cf-body-${catId}">
+          <div style="display:grid;grid-template-columns:1fr auto auto auto;font-size:9px;color:#9ca3af;padding:3px 8px;background:#f9fafb;border-bottom:1px solid #f3f4f6;gap:4px">
+            <span>機器名</span><span style="text-align:center">既定</span><span style="text-align:center">現在</span><span style="text-align:center">代品</span>
+          </div>
+          ${rows.map(row => {
+            const shortage = row.currentCount != null && row.defaultCount != null && row.currentCount < row.defaultCount;
+            return `<div style="display:grid;grid-template-columns:1fr auto auto auto;align-items:center;padding:3px 8px;gap:6px;border-bottom:1px solid #f9fafb;${shortage ? 'background:#fef2f2' : ''}">
+              <div style="font-size:11px;font-weight:500;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px" title="${row.baseName}">
+                ${shortage ? '<span style="display:inline-block;width:5px;height:5px;background:#ef4444;border-radius:50%;flex-shrink:0"></span>' : ''}
+                <span style="overflow:hidden;text-overflow:ellipsis">${row.baseName}</span>
+              </div>
+              <span style="font-size:11px;color:#6b7280;text-align:center;min-width:20px">${row.defaultCount ?? '—'}</span>
+              <span style="font-size:11px;font-weight:700;color:${shortage ? '#dc2626' : '#111827'};text-align:center;min-width:20px">${row.currentCount ?? '—'}</span>
+              <span style="font-size:11px;color:#6b7280;text-align:center;min-width:20px">${row.substituteCount ?? '—'}</span>
+            </div>`;
+          }).join('')}
         </div>
-        ${catShortage > 0 ? `<span class="text-xs bg-red-100 text-red-600 font-medium px-2 py-0.5 rounded-full">不足 ${catShortage} 種</span>` : ''}
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #f3f4f6">
-        ${rows.map(row => {
-          const shortage = row.currentCount != null && row.defaultCount != null && row.currentCount < row.defaultCount;
-          const diff = shortage ? row.defaultCount - row.currentCount : null;
-          return `<div style="border-right:1px solid #f3f4f6;border-bottom:1px solid #f3f4f6;padding:6px 8px${shortage ? ';background:#fef2f2' : ''}">
-            <div style="font-size:11px;font-weight:500;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px" title="${row.baseName}">
-              ${shortage ? '<span style="display:inline-block;width:5px;height:5px;background:#ef4444;border-radius:50%;margin-right:3px;vertical-align:middle"></span>' : ''}${row.baseName}
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:2px">
-              <div>
-                <div style="font-size:9px;color:#9ca3af">既定</div>
-                <div style="font-size:12px;font-weight:500;color:#6b7280">${row.defaultCount ?? '—'}</div>
-              </div>
-              <div>
-                <div style="font-size:9px;color:#9ca3af">現在</div>
-                <div style="font-size:12px;font-weight:700;color:${shortage ? '#dc2626' : '#111827'}">${row.currentCount ?? '—'}</div>
-              </div>
-              <div>
-                <div style="font-size:9px;color:#9ca3af">代品</div>
-                <div style="font-size:12px;color:#6b7280">${row.substituteCount ?? '—'}</div>
-              </div>
-            </div>
-            ${shortage && diff != null ? `<div style="text-align:center;font-size:9px;color:#ef4444;margin-top:1px">−${diff} 不足</div>` : ''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
-  `;}).join('');
+      </div>`;
+    }).join('') + `</div>`;
 }
 
 // ==================== ヘルパー ====================
