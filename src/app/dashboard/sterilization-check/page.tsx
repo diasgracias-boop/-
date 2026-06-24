@@ -76,6 +76,7 @@ export default function SterilizationCheckPage() {
   const [histDateFilter, setHistDateFilter] = useState("");
   const [histSearch, setHistSearch] = useState("");
   const [histJudgment, setHistJudgment] = useState("");
+  const [detailGroup, setDetailGroup] = useState<{ date: string; timeslot: string } | null>(null);
 
   // --- Edit modal state ---
   const [editRecord, setEditRecord] = useState<CheckRecord | null>(null);
@@ -111,6 +112,12 @@ export default function SterilizationCheckPage() {
     if (activeTab === "history") loadHistory();
   }, [activeTab, loadHistory]);
 
+  function parseGroup(r: CheckRecord) {
+    const m = (r.notes || "").match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
+    if (m) return { date: m[1], timeslot: m[2] };
+    return { date: r.inspectedAt.slice(0, 10), timeslot: r.notes || "—" };
+  }
+
   const filteredRecords = records.filter((r) => {
     if (histDateFilter && !r.inspectedAt.startsWith(histDateFilter)) return false;
     if (histJudgment && r.judgment !== histJudgment) return false;
@@ -120,6 +127,27 @@ export default function SterilizationCheckPage() {
     }
     return true;
   });
+
+  const TIME_ORDER = ["午前（第1回）","午前（第2回）","午後（第1回）","午後（第2回）","夜間"];
+
+  const groupMap = new Map<string, { date: string; timeslot: string; records: CheckRecord[] }>();
+  filteredRecords.forEach((r) => {
+    const { date, timeslot } = parseGroup(r);
+    const key = `${date}__${timeslot}`;
+    if (!groupMap.has(key)) groupMap.set(key, { date, timeslot, records: [] });
+    groupMap.get(key)!.records.push(r);
+  });
+  const groups = [...groupMap.values()].sort((a, b) => {
+    if (b.date !== a.date) return b.date.localeCompare(a.date);
+    return TIME_ORDER.indexOf(a.timeslot) - TIME_ORDER.indexOf(b.timeslot);
+  });
+
+  const detailRecords = detailGroup
+    ? records.filter((r) => {
+        const g = parseGroup(r);
+        return g.date === detailGroup.date && g.timeslot === detailGroup.timeslot;
+      })
+    : [];
 
   const candidates = searchQuery.trim()
     ? devices.filter((d) => d.name.includes(searchQuery) || d.deviceCode.includes(searchQuery))
@@ -486,46 +514,114 @@ export default function SterilizationCheckPage() {
             <table className="w-full text-sm bg-white">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                 <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-2 w-36">点検日時</th>
-                  <th className="px-4 py-2">機器名</th>
-                  <th className="px-4 py-2 w-28">点検者</th>
-                  <th className="px-4 py-2 text-center w-12">CE</th>
-                  <th className="px-4 py-2 text-center w-16">判定</th>
-                  <th className="px-4 py-2 w-56">備考</th>
-                  <th className="px-4 py-2 w-16"></th>
+                  <th className="px-4 py-2 w-36">日付</th>
+                  <th className="px-4 py-2 w-44">時間帯</th>
+                  <th className="px-4 py-2 text-center w-16">件数</th>
+                  <th className="px-4 py-2 text-center w-16">OK</th>
+                  <th className="px-4 py-2 text-center w-16">NG</th>
+                  <th className="px-4 py-2 w-4"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredRecords.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">{fmtDt(r.inspectedAt)}</td>
-                    <td className="px-4 py-2">
-                      <div className="font-medium text-gray-900">{r.device.name}</div>
-                      <div className="text-xs text-gray-400 font-mono">{r.device.deviceCode}</div>
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{r.inspectedBy || "—"}</td>
-                    <td className="px-4 py-2 text-center">
-                      <input type="checkbox" checked={!!r.inspectedBy} readOnly className="w-4 h-4 accent-teal-600 cursor-default" />
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.judgment === "OK" ? "bg-teal-50 text-teal-700" : "bg-red-50 text-red-700"}`}>
-                        {r.judgment}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-xs text-gray-500 max-w-xs truncate">{r.notes || "—"}</td>
-                    <td className="px-4 py-2 text-right">
-                      <button
-                        onClick={() => openEdit(r)}
-                        className="text-xs text-teal-600 hover:text-teal-800 font-medium px-2 py-1 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors"
-                      >
-                        編集
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {groups.map((g) => {
+                  const okCount = g.records.filter((r) => r.judgment === "OK").length;
+                  const ngCount = g.records.filter((r) => r.judgment === "NG").length;
+                  const dateJP = new Date(g.date + "T00:00").toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" });
+                  return (
+                    <tr
+                      key={`${g.date}__${g.timeslot}`}
+                      className="hover:bg-teal-50 cursor-pointer"
+                      onClick={() => setDetailGroup({ date: g.date, timeslot: g.timeslot })}
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900">{dateJP}</td>
+                      <td className="px-4 py-3 text-gray-700">{g.timeslot}</td>
+                      <td className="px-4 py-3 text-center text-gray-700 font-medium">{g.records.length}</td>
+                      <td className="px-4 py-3 text-center">
+                        {okCount > 0
+                          ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700">{okCount}</span>
+                          : <span className="text-gray-300 text-xs">0</span>}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {ngCount > 0
+                          ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">{ngCount}</span>
+                          : <span className="text-gray-300 text-xs">0</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-300 text-sm">›</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* Detail modal */}
+      {detailGroup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={(e) => { if (e.target === e.currentTarget) setDetailGroup(null); }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full mx-4 flex flex-col" style={{ maxWidth: "56rem", maxHeight: "90vh" }}>
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {new Date(detailGroup.date + "T00:00").toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })}　{detailGroup.timeslot}
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {detailRecords.length}台点検
+                  {detailRecords.filter((r) => r.judgment === "NG").length > 0 && (
+                    <span className="ml-2">
+                      OK {detailRecords.filter((r) => r.judgment === "OK").length}件 / NG {detailRecords.filter((r) => r.judgment === "NG").length}件
+                    </span>
+                  )}
+                </p>
+              </div>
+              <button onClick={() => setDetailGroup(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                  <tr className="text-left text-xs text-gray-500">
+                    <th className="px-4 py-2">機器名</th>
+                    <th className="px-4 py-2 w-28">点検者</th>
+                    <th className="px-4 py-2 text-center w-12">CE</th>
+                    <th className="px-4 py-2 text-center w-16">判定</th>
+                    <th className="px-4 py-2 w-32">点検日時</th>
+                    <th className="px-4 py-2 w-16"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {detailRecords.map((r) => (
+                    <tr key={r.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{r.device.name}</div>
+                        <div className="text-xs text-gray-400 font-mono">{r.device.deviceCode}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{r.inspectedBy || "—"}</td>
+                      <td className="px-4 py-3 text-center">
+                        <input type="checkbox" checked={!!r.inspectedBy} readOnly className="w-4 h-4 accent-teal-600 cursor-default" />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.judgment === "OK" ? "bg-teal-50 text-teal-700" : "bg-red-50 text-red-700"}`}>
+                          {r.judgment}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtDt(r.inspectedAt)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => { setDetailGroup(null); openEdit(r); }}
+                          className="text-xs text-teal-600 hover:text-teal-800 font-medium px-2 py-1 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors"
+                        >
+                          編集
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 

@@ -599,13 +599,12 @@
         <table class="w-full text-sm bg-white">
           <thead class="bg-gray-50 border-b border-gray-200" style="position:sticky;top:0">
             <tr class="text-left text-xs text-gray-500">
-              <th class="px-4 py-2" style="width:10rem">点検日時</th>
-              <th class="px-4 py-2">機器名</th>
-              <th class="px-4 py-2" style="width:9rem">点検者</th>
-              <th class="px-4 py-2 text-center" style="width:4rem">CE</th>
-              <th class="px-4 py-2 text-center" style="width:4rem">判定</th>
-              <th class="px-4 py-2" style="width:14rem">備考</th>
-              <th class="px-4 py-2" style="width:5rem"></th>
+              <th class="px-4 py-2" style="width:9rem">日付</th>
+              <th class="px-4 py-2" style="width:11rem">時間帯</th>
+              <th class="px-4 py-2 text-center" style="width:5rem">件数</th>
+              <th class="px-4 py-2 text-center" style="width:5rem">OK</th>
+              <th class="px-4 py-2 text-center" style="width:5rem">NG</th>
+              <th class="px-4 py-2 w-4"></th>
             </tr>
           </thead>
           <tbody id="sc-hist-tbody" class="divide-y divide-gray-100"></tbody>
@@ -630,6 +629,34 @@
 </div>
 
 <!-- ==================== モーダル ==================== -->
+
+<!-- 滅菌前点検 詳細モーダル -->
+<div id="modal-sc-detail" class="hidden modal-overlay" onclick="if(event.target===this)closeScDetail()">
+  <div class="bg-white rounded-2xl shadow-xl w-full mx-4 flex flex-col" style="max-width:56rem;max-height:90vh">
+    <div class="p-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+      <div>
+        <h2 id="sc-detail-title" class="text-lg font-semibold text-gray-900"></h2>
+        <p id="sc-detail-subtitle" class="text-sm text-gray-500 mt-0.5"></p>
+      </div>
+      <button onclick="closeScDetail()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="overflow-y-auto flex-1">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200" style="position:sticky;top:0">
+          <tr class="text-left text-xs text-gray-500">
+            <th class="px-4 py-2">機器名</th>
+            <th class="px-4 py-2" style="width:9rem">点検者</th>
+            <th class="px-4 py-2 text-center" style="width:4rem">CE</th>
+            <th class="px-4 py-2 text-center" style="width:4rem">判定</th>
+            <th class="px-4 py-2" style="width:9rem">点検日時</th>
+            <th class="px-4 py-2 text-right" style="width:5rem"></th>
+          </tr>
+        </thead>
+        <tbody id="sc-detail-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <!-- 滅菌前点検 編集モーダル -->
 <div id="modal-sc-edit" class="hidden modal-overlay" onclick="if(event.target===this)closeScEdit()">
@@ -3502,20 +3529,26 @@ function scShowTab(tab) {
   if (!isNew) renderScHistory();
 }
 
-// ---- 点検記録一覧 ----
+// ---- 点検記録 ユーティリティ ----
+function scParseGroup(r) {
+  // notes に "YYYY-MM-DD 時間帯" が格納されている場合はパース
+  const m = (r.notes || '').match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
+  if (m) return { date: m[1], timeslot: m[2] };
+  // フォールバック: inspectedAt の日付を使用
+  const d = r.inspectedAt ? r.inspectedAt.slice(0, 10) : '不明';
+  return { date: d, timeslot: r.notes || '—' };
+}
+
+// ---- 点検記録一覧（グループ表示） ----
 function renderScHistory() {
   const dateFilter = document.getElementById('sc-hist-date').value;
   const searchFilter = document.getElementById('sc-hist-search').value.trim().toLowerCase();
   const judgmentFilter = document.getElementById('sc-hist-judgment').value;
 
-  let records = [...db.sterilizationChecks].sort((a, b) => b.inspectedAt.localeCompare(a.inspectedAt));
+  let records = [...db.sterilizationChecks];
 
-  if (dateFilter) {
-    records = records.filter(r => r.inspectedAt && r.inspectedAt.startsWith(dateFilter));
-  }
-  if (judgmentFilter) {
-    records = records.filter(r => r.judgment === judgmentFilter);
-  }
+  if (dateFilter) records = records.filter(r => r.inspectedAt && r.inspectedAt.startsWith(dateFilter));
+  if (judgmentFilter) records = records.filter(r => r.judgment === judgmentFilter);
   if (searchFilter) {
     records = records.filter(r => {
       const dev = db.devices.find(d => d.id === r.deviceId);
@@ -3524,37 +3557,43 @@ function renderScHistory() {
     });
   }
 
+  // グループ化: date + timeslot キーでまとめる
+  const groupMap = new Map();
+  records.forEach(r => {
+    const { date, timeslot } = scParseGroup(r);
+    const key = `${date}__${timeslot}`;
+    if (!groupMap.has(key)) groupMap.set(key, { date, timeslot, records: [] });
+    groupMap.get(key).records.push(r);
+  });
+
+  // 日付降順 → 時間帯順でソート
+  const TIME_ORDER = ['午前（第1回）','午前（第2回）','午後（第1回）','午後（第2回）','夜間'];
+  const groups = [...groupMap.values()].sort((a, b) => {
+    if (b.date !== a.date) return b.date.localeCompare(a.date);
+    return TIME_ORDER.indexOf(a.timeslot) - TIME_ORDER.indexOf(b.timeslot);
+  });
+
   const tbody = document.getElementById('sc-hist-tbody');
   const empty = document.getElementById('sc-hist-empty');
-  if (records.length === 0) {
+  if (groups.length === 0) {
     tbody.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
-  tbody.innerHTML = records.map(r => {
-    const dev = db.devices.find(d => d.id === r.deviceId);
-    const deviceName = dev ? dev.name : '（不明）';
-    const deviceCode = dev ? dev.deviceCode : '';
-    const dtStr = r.inspectedAt ? new Date(r.inspectedAt).toLocaleString('ja-JP', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
-    const judgmentBadge = r.judgment === 'OK'
-      ? '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700">OK</span>'
-      : '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">NG</span>';
-    const hasInspector = !!r.inspectedBy;
-    const ceCk = `<input type="checkbox" ${hasInspector ? 'checked' : ''} class="w-4 h-4 cursor-default" style="accent-color:#0d9488" onclick="return false">`;
-    return `<tr class="hover:bg-gray-50">
-      <td class="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">${dtStr}</td>
-      <td class="px-4 py-2">
-        <div class="font-medium text-gray-900 text-sm">${deviceName}</div>
-        <div class="text-xs text-gray-400 font-mono">${deviceCode}</div>
-      </td>
-      <td class="px-4 py-2 text-sm text-gray-700">${r.inspectedBy || '—'}</td>
-      <td class="px-4 py-2 text-center">${ceCk}</td>
-      <td class="px-4 py-2 text-center">${judgmentBadge}</td>
-      <td class="px-4 py-2 text-xs text-gray-500" style="max-width:14rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes || '—'}</td>
-      <td class="px-4 py-2 text-right">
-        <button onclick="scOpenEdit('${r.id}')" class="text-xs text-teal-600 hover:text-teal-800 font-medium px-2 py-1 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors">編集</button>
-      </td>
+
+  tbody.innerHTML = groups.map(g => {
+    const key = `${g.date}__${g.timeslot}`;
+    const okCount = g.records.filter(r => r.judgment === 'OK').length;
+    const ngCount = g.records.filter(r => r.judgment === 'NG').length;
+    const dateJP = new Date(g.date + 'T00:00').toLocaleDateString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit' });
+    return `<tr class="hover:bg-teal-50 cursor-pointer" onclick="scOpenDetail(${JSON.stringify(key).replace(/"/g,'&quot;')})">
+      <td class="px-4 py-3 font-medium text-gray-900">${dateJP}</td>
+      <td class="px-4 py-3 text-gray-700">${g.timeslot}</td>
+      <td class="px-4 py-3 text-center text-gray-700 font-medium">${g.records.length}</td>
+      <td class="px-4 py-3 text-center">${okCount > 0 ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700">${okCount}</span>` : '<span class="text-gray-300 text-xs">0</span>'}</td>
+      <td class="px-4 py-3 text-center">${ngCount > 0 ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">${ngCount}</span>` : '<span class="text-gray-300 text-xs">0</span>'}</td>
+      <td class="px-4 py-3 text-right text-gray-300 text-xs">›</td>
     </tr>`;
   }).join('');
 }
@@ -3564,6 +3603,54 @@ function scHistClear() {
   document.getElementById('sc-hist-search').value = '';
   document.getElementById('sc-hist-judgment').value = '';
   renderScHistory();
+}
+
+// ---- 詳細モーダル ----
+function scOpenDetail(key) {
+  const [date, timeslot] = key.split('__');
+  const records = db.sterilizationChecks.filter(r => {
+    const g = scParseGroup(r);
+    return g.date === date && g.timeslot === timeslot;
+  });
+  const dateJP = new Date(date + 'T00:00').toLocaleDateString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit' });
+  document.getElementById('sc-detail-title').textContent = `${dateJP}　${timeslot}`;
+  document.getElementById('sc-detail-subtitle').textContent = `${records.length}台点検`;
+
+  const okCount = records.filter(r => r.judgment === 'OK').length;
+  const ngCount = records.filter(r => r.judgment === 'NG').length;
+  if (ngCount > 0) {
+    document.getElementById('sc-detail-subtitle').textContent += `　OK ${okCount}件 / NG ${ngCount}件`;
+  }
+
+  document.getElementById('sc-detail-tbody').innerHTML = records.map(r => {
+    const dev = db.devices.find(d => d.id === r.deviceId);
+    const name = dev ? dev.name : '（不明）';
+    const code = dev ? dev.deviceCode : '';
+    const dtStr = r.inspectedAt ? new Date(r.inspectedAt).toLocaleString('ja-JP', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+    const ce = `<input type="checkbox" ${r.inspectedBy ? 'checked' : ''} class="w-4 h-4 cursor-default" style="accent-color:#0d9488" onclick="return false">`;
+    const badge = r.judgment === 'OK'
+      ? '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700">OK</span>'
+      : '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">NG</span>';
+    return `<tr class="hover:bg-gray-50">
+      <td class="px-4 py-3">
+        <div class="font-medium text-gray-900">${name}</div>
+        <div class="text-xs text-gray-400 font-mono">${code}</div>
+      </td>
+      <td class="px-4 py-3 text-sm text-gray-700">${r.inspectedBy || '—'}</td>
+      <td class="px-4 py-3 text-center">${ce}</td>
+      <td class="px-4 py-3 text-center">${badge}</td>
+      <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${dtStr}</td>
+      <td class="px-4 py-3 text-right">
+        <button onclick="event.stopPropagation();closeScDetail();scOpenEdit('${r.id}')" class="text-xs text-teal-600 hover:text-teal-800 font-medium px-2 py-1 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors">編集</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-sc-detail').classList.remove('hidden');
+}
+
+function closeScDetail() {
+  document.getElementById('modal-sc-detail').classList.add('hidden');
 }
 
 // ---- 点検記録編集 ----
