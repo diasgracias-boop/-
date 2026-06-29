@@ -1776,6 +1776,7 @@ function renderDevices() {
           <td class="px-4 py-3">${ni ? `<span class="text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}">${isOverdue ? '⚠ ' : ''}${fmtDate(ni.scheduledAt)}</span>` : '<span class="text-xs text-gray-400">未設定</span>'}</td>
           <td class="px-4 py-3 flex gap-2">
             <button onclick="openDeviceModal('${d.id}')" class="text-xs text-blue-600 hover:underline">編集</button>
+            <button onclick="openRepairModal('${d.id}')" class="text-xs text-orange-600 hover:underline">修理登録</button>
             <button onclick="deleteDevice('${d.id}')" class="text-xs text-red-500 hover:underline">削除</button>
           </td>
         </tr>`;
@@ -2756,9 +2757,9 @@ function renderRepairs() {
   populateDeviceSelects();
 }
 
-function openRepairModal() {
+function openRepairModal(deviceId) {
   populateDeviceSelects();
-  document.getElementById('fr-deviceId').value = '';
+  document.getElementById('fr-deviceId').value = deviceId || '';
   document.getElementById('fr-reportedBy').value = '';
   document.getElementById('fr-reportedAt').value = today();
   document.getElementById('fr-symptom').value = '';
@@ -2778,6 +2779,7 @@ function saveRepair() {
   if (dev) dev.status = 'REPAIR';
   closeModal('modal-repair');
   renderRepairs();
+  renderDevices();
 }
 
 function openRepairUpdateModal(id) {
