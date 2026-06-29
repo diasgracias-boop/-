@@ -3537,7 +3537,7 @@ document.addEventListener('click', e => {
 function scShowTab(tab) {
   const isNew = tab === 'new';
   document.getElementById('sc-panel-new').style.display = isNew ? 'flex' : 'none';
-  document.getElementById('sc-panel-history').style.display = isNew ? 'none' : 'flex';
+  document.getElementById('sc-panel-history').style.display = isNew ? 'none' : 'block';
   document.getElementById('sc-new-controls').style.display = isNew ? 'flex' : 'none';
   document.getElementById('sc-hist-controls').style.display = isNew ? 'none' : 'flex';
   const newBtn = document.getElementById('sc-tab-new-btn');
