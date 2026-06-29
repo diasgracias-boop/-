@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import RepairModal from "@/components/RepairModal";
 import RepairUpdateModal from "@/components/RepairUpdateModal";
+import type { RepairStatusLogEntry } from "@/components/RepairTimeline";
 
 interface RepairLog {
   id: string;
@@ -17,6 +18,7 @@ interface RepairLog {
   reportedBy: string;
   resolvedAt?: string;
   device: { name: string; deviceCode: string };
+  statusLogs?: RepairStatusLogEntry[];
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -136,14 +138,12 @@ export default function RepairsPage() {
                       {log.cost != null ? `¥${log.cost.toLocaleString()}` : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      {(log.status === "OPEN" || log.status === "IN_PROGRESS") && (
-                        <button
-                          onClick={() => setUpdateTarget(log)}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          更新
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setUpdateTarget(log)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        履歴・更新
+                      </button>
                     </td>
                   </tr>
                 );

@@ -19,6 +19,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       resolvedAt: body.status === "RESOLVED" || body.status === "CLOSED" ? new Date() : null,
       cost: body.cost ? parseFloat(body.cost) : null,
       vendor: body.vendor || null,
+      statusLogs: {
+        create: {
+          status: body.status,
+          changedBy: body.changedBy || "—",
+          note: body.note || null,
+        },
+      },
+    },
+    include: {
+      statusLogs: { orderBy: { changedAt: "asc" } },
     },
   });
 

@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     include: {
       device: { select: { name: true, deviceCode: true } },
       user: { select: { name: true } },
+      statusLogs: { orderBy: { changedAt: "asc" } },
     },
     orderBy: { reportedAt: "desc" },
   });
@@ -45,9 +46,18 @@ export async function POST(req: NextRequest) {
       status: body.status || "OPEN",
       cost: body.cost ? parseFloat(body.cost) : null,
       vendor: body.vendor || null,
+      statusLogs: {
+        create: {
+          status: body.status || "OPEN",
+          changedBy: body.reportedBy,
+          note: body.symptom,
+          changedAt: new Date(body.reportedAt),
+        },
+      },
     },
     include: {
       device: { select: { name: true, deviceCode: true } },
+      statusLogs: { orderBy: { changedAt: "asc" } },
     },
   });
 

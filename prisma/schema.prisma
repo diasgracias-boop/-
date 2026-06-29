@@ -200,6 +200,7 @@ model RepairLog {
   status     RepairStatus @default(OPEN)
   cost       Float?
   vendor     String?
+  statusLogs RepairStatusLog[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 }
@@ -209,4 +210,17 @@ enum RepairStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+}
+
+model RepairStatusLog {
+  id          String       @id @default(cuid())
+  repairLogId String
+  repairLog   RepairLog    @relation(fields: [repairLogId], references: [id], onDelete: Cascade)
+  status      RepairStatus
+  changedBy   String
+  note        String?
+  changedAt   DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+
+  @@index([repairLogId])
 }

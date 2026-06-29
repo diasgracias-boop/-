@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ME_STAFF } from "@/lib/constants";
+import RepairTimeline, { RepairStatusLogEntry } from "./RepairTimeline";
 
 interface RepairUpdateModalProps {
   repair: {
@@ -11,6 +13,7 @@ interface RepairUpdateModalProps {
     cost?: number;
     vendor?: string;
     device: { name: string };
+    statusLogs?: RepairStatusLogEntry[];
   };
   onClose: () => void;
   onSaved: () => void;
@@ -19,6 +22,8 @@ interface RepairUpdateModalProps {
 export default function RepairUpdateModal({ repair, onClose, onSaved }: RepairUpdateModalProps) {
   const [form, setForm] = useState({
     status: repair.status,
+    changedBy: "",
+    note: "",
     cause: repair.cause ?? "",
     action: repair.action ?? "",
     cost: repair.cost?.toString() ?? "",
@@ -47,18 +52,49 @@ export default function RepairUpdateModal({ repair, onClose, onSaved }: RepairUp
           <p className="text-sm text-gray-500 mt-1">{repair.device.name}</p>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {repair.statusLogs && repair.statusLogs.length > 0 && (
+            <div className="bg-gray-50 rounded-xl p-4">
+              <RepairTimeline logs={repair.statusLogs} currentStatus={repair.status} />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ステータス *</label>
+              <select
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="OPEN">未対応</option>
+                <option value="IN_PROGRESS">対応中</option>
+                <option value="RESOLVED">解決済</option>
+                <option value="CLOSED">完了</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">対応者 *</label>
+              <select
+                value={form.changedBy}
+                onChange={(e) => setForm((f) => ({ ...f, changedBy: e.target.value }))}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">担当者を選択...</option>
+                {ME_STAFF.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ステータス *</label>
-            <select
-              value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+            <label className="block text-sm font-medium text-gray-700 mb-1">対応コメント</label>
+            <input
+              type="text"
+              value={form.note}
+              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+              placeholder="例: メーカーに保守依頼、基板交換完了 など"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="OPEN">未対応</option>
-              <option value="IN_PROGRESS">対応中</option>
-              <option value="RESOLVED">解決済</option>
-              <option value="CLOSED">完了</option>
-            </select>
+            />
           </div>
 
           <div>

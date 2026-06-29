@@ -133,6 +133,51 @@ async function main() {
     },
   });
 
+  // 修理サンプル（ステータス履歴・タイムライン付き）
+  await prisma.repairLog.create({
+    data: {
+      deviceId: device1.id,
+      reportedBy: "佐藤",
+      userId: admin.id,
+      reportedAt: new Date("2026-05-20T09:00"),
+      symptom: "電源が入らない",
+      cause: "電源基板の故障",
+      action: "電源基板を交換",
+      status: "RESOLVED",
+      resolvedAt: new Date("2026-05-28T15:00"),
+      cost: 45000,
+      vendor: "日本光電サービス",
+      statusLogs: {
+        create: [
+          { status: "OPEN", changedBy: "佐藤", note: "電源が入らないと報告", changedAt: new Date("2026-05-20T09:00") },
+          { status: "IN_PROGRESS", changedBy: "ME1", note: "メーカーに保守依頼、部品手配", changedAt: new Date("2026-05-22T10:30") },
+          { status: "RESOLVED", changedBy: "ME3", note: "電源基板を交換、動作確認OK", changedAt: new Date("2026-05-28T15:00") },
+        ],
+      },
+    },
+  });
+
+  await prisma.repairLog.create({
+    data: {
+      deviceId: device2.id,
+      reportedBy: "高橋",
+      userId: admin.id,
+      reportedAt: new Date("2026-06-25T11:00"),
+      symptom: "起動時にエラーコードE-12が表示される",
+      cause: "冷却系統の異常（調査中）",
+      action: "メーカー保守を手配",
+      status: "IN_PROGRESS",
+      vendor: "シーメンス保守",
+      statusLogs: {
+        create: [
+          { status: "OPEN", changedBy: "高橋", note: "起動時にエラーコードE-12が表示される", changedAt: new Date("2026-06-25T11:00") },
+          { status: "IN_PROGRESS", changedBy: "ME2", note: "メーカーに連絡、6/30に技術者訪問予定", changedAt: new Date("2026-06-26T14:00") },
+        ],
+      },
+    },
+  });
+  await prisma.device.update({ where: { id: device2.id }, data: { status: "REPAIR" } });
+
   // 清潔野機器（滅菌前点検用）
   const cfDevice1 = await prisma.device.upsert({
     where: { deviceCode: "CF-001" },

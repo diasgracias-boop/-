@@ -5,6 +5,7 @@ import PmdaSearchModal from "./PmdaSearchModal";
 import DocumentUpload from "./DocumentUpload";
 import InspectionTemplateModal from "./InspectionTemplateModal";
 import RepairModal from "./RepairModal";
+import RepairTimeline, { RepairStatusLogEntry } from "./RepairTimeline";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
 
 type DocField = "attachmentUrl" | "catalogUrl" | "manualUrl";
@@ -99,6 +100,7 @@ interface RepairLogForModal {
   status: string;
   cost: number | null;
   vendor: string | null;
+  statusLogs?: RepairStatusLogEntry[];
 }
 
 interface InspectionScheduleForModal {
@@ -904,6 +906,11 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                           {r.cost != null && <span>費用: ¥{r.cost.toLocaleString()}</span>}
                         </div>
                       </div>
+                      {r.statusLogs && r.statusLogs.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <RepairTimeline logs={r.statusLogs} currentStatus={r.status} />
+                        </div>
+                      )}
                     </div>
                   );
                     })
