@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
 import DocumentUpload from "./DocumentUpload";
 import InspectionTemplateModal from "./InspectionTemplateModal";
+import RepairModal from "./RepairModal";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
 
 type DocField = "attachmentUrl" | "catalogUrl" | "manualUrl";
@@ -198,6 +199,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   // 修理履歴タブ用 state
   const [repairs, setRepairs] = useState<RepairLogForModal[]>([]);
   const [repairsLoading, setRepairsLoading] = useState(false);
+  const [showRepairModal, setShowRepairModal] = useState(false);
 
   const loadRepairs = useCallback(async () => {
     if (!device?.id) return;
@@ -377,6 +379,14 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
             initialManufacturer={form.manufacturer}
             onSelect={applyPmdaResult}
             onClose={() => setPmdaTarget(null)}
+          />
+        )}
+
+        {showRepairModal && device?.id && (
+          <RepairModal
+            deviceId={device.id}
+            onClose={() => setShowRepairModal(false)}
+            onSaved={loadRepairs}
           />
         )}
 
@@ -857,12 +867,23 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
             <div className="space-y-3">
               {!device?.id ? (
                 <p className="text-sm text-gray-500">機器を保存してから修理履歴を確認できます。</p>
-              ) : repairsLoading ? (
-                <p className="text-sm text-gray-400">読み込み中...</p>
-              ) : repairs.length === 0 ? (
-                <p className="text-sm text-gray-500">この機器の修理・故障履歴はありません。</p>
               ) : (
-                repairs.map((r) => {
+                <>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowRepairModal(true)}
+                      className="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                    >
+                      + 故障を報告
+                    </button>
+                  </div>
+                  {repairsLoading ? (
+                    <p className="text-sm text-gray-400">読み込み中...</p>
+                  ) : repairs.length === 0 ? (
+                    <p className="text-sm text-gray-500">この機器の修理・故障履歴はありません。</p>
+                  ) : (
+                    repairs.map((r) => {
                   const st = REPAIR_STATUS_CONFIG[r.status] ?? { label: r.status, color: "bg-gray-100 text-gray-600" };
                   return (
                     <div key={r.id} className="border border-gray-200 rounded-xl p-4">
@@ -885,7 +906,9 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                       </div>
                     </div>
                   );
-                })
+                    })
+                  )}
+                </>
               )}
             </div>
           )}

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import DeviceModal from "@/components/DeviceModal";
-import RepairModal from "@/components/RepairModal";
 
 interface Device {
   id: string;
@@ -42,7 +41,6 @@ export default function DevicesPage() {
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [showModal, setShowModal] = useState(false);
   const [editDevice, setEditDevice] = useState<Device | null>(null);
-  const [repairDeviceId, setRepairDeviceId] = useState<string | null>(null);
 
   const fetchDevices = useCallback(async () => {
     const params = new URLSearchParams();
@@ -169,12 +167,6 @@ export default function DevicesPage() {
                           編集
                         </button>
                         <button
-                          onClick={() => setRepairDeviceId(d.id)}
-                          className="text-xs text-orange-600 hover:underline"
-                        >
-                          修理登録
-                        </button>
-                        <button
                           onClick={() => handleDelete(d.id)}
                           className="text-xs text-red-500 hover:underline"
                         >
@@ -194,14 +186,6 @@ export default function DevicesPage() {
         <DeviceModal
           device={editDevice}
           onClose={() => setShowModal(false)}
-          onSaved={fetchDevices}
-        />
-      )}
-
-      {repairDeviceId && (
-        <RepairModal
-          deviceId={repairDeviceId}
-          onClose={() => setRepairDeviceId(null)}
           onSaved={fetchDevices}
         />
       )}

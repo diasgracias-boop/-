@@ -1776,7 +1776,6 @@ function renderDevices() {
           <td class="px-4 py-3">${ni ? `<span class="text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}">${isOverdue ? '⚠ ' : ''}${fmtDate(ni.scheduledAt)}</span>` : '<span class="text-xs text-gray-400">未設定</span>'}</td>
           <td class="px-4 py-3 flex gap-2">
             <button onclick="openDeviceModal('${d.id}')" class="text-xs text-blue-600 hover:underline">編集</button>
-            <button onclick="openRepairModal('${d.id}')" class="text-xs text-orange-600 hover:underline">修理登録</button>
             <button onclick="deleteDevice('${d.id}')" class="text-xs text-red-500 hover:underline">削除</button>
           </td>
         </tr>`;
@@ -1800,18 +1799,19 @@ function switchDeviceTab(name, btn) {
 function renderDeviceRepairsTab() {
   const list = document.getElementById('device-repairs-list');
   if (!list) return;
-  const logs = db.repairLogs
-    .filter(r => r.deviceId === editingDeviceId)
-    .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
   if (!editingDeviceId) {
     list.innerHTML = '<p class="text-sm text-gray-500">機器を保存してから修理履歴を確認できます。</p>';
     return;
   }
+  const logs = db.repairLogs
+    .filter(r => r.deviceId === editingDeviceId)
+    .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
+  const reportBtn = `<div class="flex justify-end mb-3"><button onclick="openRepairModal('${editingDeviceId}')" class="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-red-700">+ 故障を報告</button></div>`;
   if (logs.length === 0) {
-    list.innerHTML = '<p class="text-sm text-gray-500">この機器の修理・故障履歴はありません。</p>';
+    list.innerHTML = reportBtn + '<p class="text-sm text-gray-500">この機器の修理・故障履歴はありません。</p>';
     return;
   }
-  list.innerHTML = logs.map(r => {
+  list.innerHTML = reportBtn + logs.map(r => {
     const st = repairStatusConfig[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600' };
     const meta = [];
     if (r.cause) meta.push(`<div><span class="text-gray-400">原因: </span>${r.cause}</div>`);
@@ -2780,6 +2780,7 @@ function saveRepair() {
   closeModal('modal-repair');
   renderRepairs();
   renderDevices();
+  renderDeviceRepairsTab();
 }
 
 function openRepairUpdateModal(id) {
