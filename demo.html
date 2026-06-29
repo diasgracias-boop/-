@@ -321,6 +321,10 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" /></svg>
         機器台帳
       </button>
+      <button onclick="showPage('dealers')" id="nav-dealers" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 7v14m18-14v14M3 7l9-4 9 4M9 21v-4a1 1 0 011-1h4a1 1 0 011 1v4M9 11h.01M15 11h.01" /></svg>
+        代理店登録
+      </button>
       <button onclick="showPage('inspections')" id="nav-inspections" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
         点検スケジュール
@@ -431,6 +435,28 @@
             </tr>
           </thead>
           <tbody id="device-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 代理店登録 -->
+    <div id="page-dealers" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">代理店登録</h1>
+        <button onclick="openDealerModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ 代理店を登録</button>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 mb-4 p-4">
+        <input id="dealer-search" type="text" placeholder="代理店名・担当者・電話・メールで検索..." oninput="renderDealers()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">代理店</th><th class="px-4 py-3">担当者</th>
+              <th class="px-4 py-3">電話番号</th><th class="px-4 py-3">メールアドレス</th><th class="px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody id="dealer-table-body"></tbody>
         </table>
       </div>
     </div>
@@ -1297,6 +1323,30 @@
   </div>
 </div>
 
+<!-- 代理店登録モーダル -->
+<div id="modal-dealer" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4">
+    <div class="p-6 border-b border-gray-200"><h2 id="dealer-modal-title" class="text-lg font-semibold text-gray-900">代理店を登録</h2></div>
+    <div class="p-6 space-y-4">
+      <input type="hidden" id="fd-id">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">代理店 *</label>
+        <input id="fd-name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">担当者</label>
+        <input id="fd-contactPerson" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+          <input id="fd-phone" type="tel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+          <input id="fd-email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveDealer()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">保存</button>
+        <button onclick="closeModal('modal-dealer')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 故障報告モーダル -->
 <div id="modal-repair" class="hidden modal-overlay">
   <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4">
@@ -1536,6 +1586,10 @@ let db = {
         { id: 'rl4', status: 'RESOLVED', changedBy: 'ME3', note: '電源基板を交換、動作確認OK', changedAt: '2026-05-28T15:00' },
       ] },
   ],
+  dealers: [
+    { id: 'dl1', name: 'メディカル商事', contactPerson: '鈴木一郎', phone: '03-1234-5678', email: 'suzuki@medical-shoji.co.jp' },
+    { id: 'dl2', name: '〇〇メディカル', contactPerson: '田中花子', phone: '06-9876-5432', email: 'tanaka@maru-medical.co.jp' },
+  ],
   sterilizationChecks: (function() {
     const today = new Date().toISOString().slice(0,10);
     const yday = new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -1624,6 +1678,7 @@ function showPage(name) {
   if (active) active.className = 'nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left bg-blue-50 text-blue-700 font-medium';
   if (name === 'dashboard')    { renderDashboard(); autoCheckPmda(); }
   if (name === 'devices')      renderDevices();
+  if (name === 'dealers')      renderDealers();
   if (name === 'inspections')  renderInspections();
   if (name === 'maintenance')  renderMaintenance();
   if (name === 'repairs')      renderRepairs();
@@ -1813,6 +1868,64 @@ function switchDeviceTab(name, btn) {
   btn.className = 'device-tab active px-4 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 -mb-px';
   if (name === 'insp-records') renderInspRecordsTab();
   if (name === 'repairs') renderDeviceRepairsTab();
+}
+
+// ==================== 代理店登録 ====================
+function renderDealers() {
+  const search = (document.getElementById('dealer-search')?.value || '').toLowerCase();
+  const filtered = db.dealers.filter(d => !search ||
+    d.name.toLowerCase().includes(search) ||
+    (d.contactPerson || '').toLowerCase().includes(search) ||
+    (d.phone || '').toLowerCase().includes(search) ||
+    (d.email || '').toLowerCase().includes(search));
+  document.getElementById('dealer-table-body').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">代理店が登録されていません</td></tr>'
+    : filtered.map(d => `<tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-medium text-gray-900">${d.name}</td>
+        <td class="px-4 py-3 text-gray-600">${d.contactPerson || '—'}</td>
+        <td class="px-4 py-3 text-gray-600">${d.phone || '—'}</td>
+        <td class="px-4 py-3 text-gray-600">${d.email ? `<a href="mailto:${d.email}" class="text-blue-600 hover:underline">${d.email}</a>` : '—'}</td>
+        <td class="px-4 py-3"><div class="flex gap-2">
+          <button onclick="openDealerModal('${d.id}')" class="text-xs text-blue-600 hover:underline">編集</button>
+          <button onclick="deleteDealer('${d.id}')" class="text-xs text-red-500 hover:underline">削除</button>
+        </div></td>
+      </tr>`).join('');
+}
+
+function openDealerModal(id) {
+  const d = id ? db.dealers.find(x => x.id === id) : null;
+  document.getElementById('dealer-modal-title').textContent = d ? '代理店を編集' : '代理店を登録';
+  document.getElementById('fd-id').value = d ? d.id : '';
+  document.getElementById('fd-name').value = d ? d.name : '';
+  document.getElementById('fd-contactPerson').value = d ? (d.contactPerson || '') : '';
+  document.getElementById('fd-phone').value = d ? (d.phone || '') : '';
+  document.getElementById('fd-email').value = d ? (d.email || '') : '';
+  document.getElementById('modal-dealer').classList.remove('hidden');
+}
+
+function saveDealer() {
+  const id = document.getElementById('fd-id').value;
+  const name = document.getElementById('fd-name').value.trim();
+  if (!name) { alert('代理店名は必須です'); return; }
+  const data = {
+    name,
+    contactPerson: document.getElementById('fd-contactPerson').value.trim() || null,
+    phone: document.getElementById('fd-phone').value.trim() || null,
+    email: document.getElementById('fd-email').value.trim() || null,
+  };
+  if (id) {
+    Object.assign(db.dealers.find(x => x.id === id), data);
+  } else {
+    db.dealers.push({ id: uid(), ...data });
+  }
+  closeModal('modal-dealer');
+  renderDealers();
+}
+
+function deleteDealer(id) {
+  if (!confirm('この代理店を削除しますか？')) return;
+  db.dealers = db.dealers.filter(x => x.id !== id);
+  renderDealers();
 }
 
 // ==================== 修理タイムライン ====================

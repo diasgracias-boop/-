@@ -24,6 +24,15 @@ const navItems = [
     ),
   },
   {
+    href: "/dashboard/dealers",
+    label: "代理店登録",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M3 7v14m18-14v14M3 7l9-4 9 4M9 21v-4a1 1 0 011-1h4a1 1 0 011 1v4M9 11h.01M15 11h.01" />
+      </svg>
+    ),
+  },
+  {
     href: "/dashboard/inspections",
     label: "点検スケジュール",
     icon: (
