@@ -524,6 +524,7 @@
               <option>夜間</option>
             </select>
             <button onclick="scRegister()" id="sc-register-btn" class="text-sm font-medium rounded-lg px-4 py-1.5 transition-colors" style="background:#0d9488;color:#fff;opacity:0.4;pointer-events:none">登録</button>
+            <span id="sc-register-msg" style="display:none;font-size:0.875rem;color:#dc2626"></span>
           </div>
           <!-- 点検記録タブ用コントロール -->
           <div id="sc-hist-controls" style="display:none;align-items:center;gap:0.5rem;margin-left:auto">
@@ -1510,13 +1511,17 @@ let db = {
   repairLogs: [
     { id: 'r1', deviceId: 'd3', reportedBy: '看護師 田中', reportedAt: '2026-05-10', symptom: '表示画面が点灯しない、アラーム音が鳴らない', cause: '', action: '', status: 'OPEN', cost: null, vendor: 'フクダ電子サービス' },
   ],
-  sterilizationChecks: [
-    { id: 'sc1', deviceId: 'cf01', inspectedBy: 'ME1', judgment: 'OK', notes: '異常なし', inspectedAt: '2026-06-24T08:30' },
-    { id: 'sc2', deviceId: 'cf02', inspectedBy: 'ME2', judgment: 'OK', notes: null, inspectedAt: '2026-06-24T08:35' },
-    { id: 'sc3', deviceId: 'cf03', inspectedBy: 'ME1', judgment: 'NG', notes: 'パッケージに破損あり', inspectedAt: '2026-06-24T08:40' },
-    { id: 'sc4', deviceId: 'cf04', inspectedBy: 'ME3', judgment: 'OK', notes: null, inspectedAt: '2026-06-23T14:00' },
-    { id: 'sc5', deviceId: 'cf05', inspectedBy: 'ME2', judgment: 'OK', notes: null, inspectedAt: '2026-06-23T14:10' },
-  ],
+  sterilizationChecks: (function() {
+    const today = new Date().toISOString().slice(0,10);
+    const yday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    return [
+      { id: 'sc1', deviceId: 'cf01', inspectedBy: 'ME1', judgment: 'OK',  notes: `${today} 午前（第1回）`, inspectedAt: `${today}T08:30` },
+      { id: 'sc2', deviceId: 'cf02', inspectedBy: 'ME1', judgment: 'OK',  notes: `${today} 午前（第1回）`, inspectedAt: `${today}T08:32` },
+      { id: 'sc3', deviceId: 'cf03', inspectedBy: 'ME2', judgment: 'NG',  notes: `${today} 午前（第1回）`, inspectedAt: `${today}T08:35` },
+      { id: 'sc4', deviceId: 'cf01', inspectedBy: 'ME3', judgment: 'OK',  notes: `${yday} 午後（第1回）`, inspectedAt: `${yday}T14:00` },
+      { id: 'sc5', deviceId: 'cf02', inspectedBy: 'ME3', judgment: 'OK',  notes: `${yday} 午後（第1回）`, inspectedAt: `${yday}T14:05` },
+    ];
+  })(),
 };
 
 let currentInspectionFilter = 'upcoming';
@@ -3497,8 +3502,22 @@ function scRegister() {
   const timeSlot = document.getElementById('sc-timeslot').value;
   const toSave = scSelected.filter(s => s.inspectedBy);
   if (toSave.length === 0) return;
+  const msgEl = document.getElementById('sc-register-msg');
+  msgEl.style.display = 'none';
+  if (!date || !timeSlot) {
+    msgEl.textContent = 'エラー：日付と時間帯を選択してください';
+    msgEl.style.display = 'inline';
+    return;
+  }
   toSave.forEach(s => {
-    db.sterilizationChecks.push({ id: uid(), deviceId: s.deviceId, inspectedBy: s.inspectedBy, judgment: s.judgment || 'OK', notes: `${date} ${timeSlot}`, inspectedAt: s.inspectedAt ?? `${date}T00:00` });
+    db.sterilizationChecks.push({
+      id: uid(),
+      deviceId: s.deviceId,
+      inspectedBy: s.inspectedBy,
+      judgment: s.judgment || 'OK',
+      notes: `${date} ${timeSlot}`,
+      inspectedAt: s.inspectedAt ?? `${date}T00:00`,
+    });
   });
   scSelected = scSelected.filter(s => !s.inspectedBy);
   renderSterilizationList();
