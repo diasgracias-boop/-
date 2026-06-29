@@ -358,6 +358,7 @@ export default function SterilizationCheckPage() {
                 type="date"
                 value={histDateFilter}
                 onChange={(e) => setHistDateFilter(e.target.value)}
+                autoComplete="off"
                 className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
               <input
