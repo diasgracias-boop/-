@@ -596,7 +596,7 @@
       </div>
 
       <!-- 点検記録パネル -->
-      <div id="sc-panel-history" class="hidden flex-1 overflow-y-auto">
+      <div id="sc-panel-history" class="flex-1 overflow-y-auto" style="display:none">
         <table class="w-full text-sm bg-white">
           <thead class="bg-gray-50 border-b border-gray-200" style="position:sticky;top:0">
             <tr class="text-left text-xs text-gray-500">
@@ -610,7 +610,7 @@
           </thead>
           <tbody id="sc-hist-tbody" class="divide-y divide-gray-100"></tbody>
         </table>
-        <div id="sc-hist-empty" class="hidden flex-col items-center justify-center gap-3 text-gray-400 text-sm" style="height:12rem">
+        <div id="sc-hist-empty" class="flex-col items-center justify-center gap-3 text-gray-400 text-sm" style="height:12rem;display:none">
           <p id="sc-hist-empty-msg">点検記録がまだありません</p>
           <button id="sc-seed-btn" onclick="scSeedDemo()" style="display:none;padding:0.5rem 1rem;background:#0d9488;color:#fff;border-radius:0.5rem;font-size:0.875rem;cursor:pointer">サンプルデータを追加</button>
         </div>
