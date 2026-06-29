@@ -77,8 +77,28 @@ function toDateInput(d?: string | null) {
   return new Date(d).toISOString().split("T")[0];
 }
 
-const TABS = ["基本情報", "点検・バッテリー", "定期点検", "廃棄・その他"] as const;
+const TABS = ["基本情報", "点検・バッテリー", "定期点検", "修理履歴", "廃棄・その他"] as const;
 type Tab = (typeof TABS)[number];
+
+const REPAIR_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  OPEN: { label: "未対応", color: "bg-red-100 text-red-700" },
+  IN_PROGRESS: { label: "対応中", color: "bg-yellow-100 text-yellow-700" },
+  RESOLVED: { label: "解決済", color: "bg-green-100 text-green-700" },
+  CLOSED: { label: "完了", color: "bg-gray-100 text-gray-600" },
+};
+
+interface RepairLogForModal {
+  id: string;
+  reportedBy: string;
+  reportedAt: string;
+  symptom: string;
+  cause: string | null;
+  action: string | null;
+  resolvedAt: string | null;
+  status: string;
+  cost: number | null;
+  vendor: string | null;
+}
 
 interface InspectionScheduleForModal {
   id: string;
@@ -174,6 +194,23 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   const [inspMeasurements, setInspMeasurements] = useState<InspectionMeasurement[]>([]);
   const [inspSaving, setInspSaving] = useState(false);
   const [inspLoadingItems, setInspLoadingItems] = useState(false);
+
+  // 修理履歴タブ用 state
+  const [repairs, setRepairs] = useState<RepairLogForModal[]>([]);
+  const [repairsLoading, setRepairsLoading] = useState(false);
+
+  const loadRepairs = useCallback(async () => {
+    if (!device?.id) return;
+    setRepairsLoading(true);
+    const res = await fetch(`/api/repairs?deviceId=${device.id}`);
+    const data: RepairLogForModal[] = await res.json();
+    setRepairs(data);
+    setRepairsLoading(false);
+  }, [device?.id]);
+
+  useEffect(() => {
+    if (tab === "修理履歴") loadRepairs();
+  }, [tab, loadRepairs]);
 
   const loadSchedules = useCallback(async () => {
     if (!device?.id) return;
@@ -811,6 +848,44 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                     );
                   })}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== 修理履歴 ===== */}
+          {tab === "修理履歴" && (
+            <div className="space-y-3">
+              {!device?.id ? (
+                <p className="text-sm text-gray-500">機器を保存してから修理履歴を確認できます。</p>
+              ) : repairsLoading ? (
+                <p className="text-sm text-gray-400">読み込み中...</p>
+              ) : repairs.length === 0 ? (
+                <p className="text-sm text-gray-500">この機器の修理・故障履歴はありません。</p>
+              ) : (
+                repairs.map((r) => {
+                  const st = REPAIR_STATUS_CONFIG[r.status] ?? { label: r.status, color: "bg-gray-100 text-gray-600" };
+                  return (
+                    <div key={r.id} className="border border-gray-200 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
+                        <span className="text-xs text-gray-500">
+                          報告日: {new Date(r.reportedAt).toLocaleDateString("ja-JP")}
+                          {r.resolvedAt && ` ／ 解決日: ${new Date(r.resolvedAt).toLocaleDateString("ja-JP")}`}
+                        </span>
+                      </div>
+                      <div className="text-sm font-medium text-gray-900 mb-1">{r.symptom}</div>
+                      <div className="grid grid-cols-1 gap-1 text-xs text-gray-600">
+                        {r.cause && <div><span className="text-gray-400">原因: </span>{r.cause}</div>}
+                        {r.action && <div><span className="text-gray-400">対応: </span>{r.action}</div>}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-gray-500">
+                          <span>報告者: {r.reportedBy}</span>
+                          {r.vendor && <span>業者: {r.vendor}</span>}
+                          {r.cost != null && <span>費用: ¥{r.cost.toLocaleString()}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           )}

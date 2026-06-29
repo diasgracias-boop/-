@@ -722,6 +722,7 @@
       <button class="device-tab active px-4 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 -mb-px" onclick="switchDeviceTab('basic',this)">基本情報</button>
       <button class="device-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-700" onclick="switchDeviceTab('inspection',this)">点検・バッテリー</button>
       <button class="device-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-700" onclick="switchDeviceTab('insp-records',this)">定期点検</button>
+      <button class="device-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-700" onclick="switchDeviceTab('repairs',this)">修理履歴</button>
       <button class="device-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-700" onclick="switchDeviceTab('docs',this)">書類・その他</button>
     </div>
     <div class="overflow-y-auto flex-1">
@@ -865,6 +866,11 @@
       <!-- 定期点検タブ -->
       <div id="dtab-insp-records" class="p-6 space-y-3 hidden">
         <div id="insp-records-list"></div>
+      </div>
+
+      <!-- 修理履歴タブ -->
+      <div id="dtab-repairs" class="p-6 space-y-3 hidden">
+        <div id="device-repairs-list"></div>
       </div>
 
       <!-- 書類・その他タブ -->
@@ -1778,7 +1784,7 @@ function renderDevices() {
 
 // ==================== 機器モーダル タブ ====================
 function switchDeviceTab(name, btn) {
-  ['basic','inspection','insp-records','docs'].forEach(t => {
+  ['basic','inspection','insp-records','repairs','docs'].forEach(t => {
     document.getElementById('dtab-' + t).classList.add('hidden');
   });
   document.getElementById('dtab-' + name).classList.remove('hidden');
@@ -1787,6 +1793,44 @@ function switchDeviceTab(name, btn) {
   });
   btn.className = 'device-tab active px-4 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 -mb-px';
   if (name === 'insp-records') renderInspRecordsTab();
+  if (name === 'repairs') renderDeviceRepairsTab();
+}
+
+function renderDeviceRepairsTab() {
+  const list = document.getElementById('device-repairs-list');
+  if (!list) return;
+  const logs = db.repairLogs
+    .filter(r => r.deviceId === editingDeviceId)
+    .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
+  if (!editingDeviceId) {
+    list.innerHTML = '<p class="text-sm text-gray-500">機器を保存してから修理履歴を確認できます。</p>';
+    return;
+  }
+  if (logs.length === 0) {
+    list.innerHTML = '<p class="text-sm text-gray-500">この機器の修理・故障履歴はありません。</p>';
+    return;
+  }
+  list.innerHTML = logs.map(r => {
+    const st = repairStatusConfig[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600' };
+    const meta = [];
+    if (r.cause) meta.push(`<div><span class="text-gray-400">原因: </span>${r.cause}</div>`);
+    if (r.action) meta.push(`<div><span class="text-gray-400">対応: </span>${r.action}</div>`);
+    const footer = [`報告者: ${r.reportedBy}`];
+    if (r.vendor) footer.push(`業者: ${r.vendor}`);
+    if (r.cost != null) footer.push(`費用: ¥${Number(r.cost).toLocaleString()}`);
+    return `
+    <div class="border border-gray-200 rounded-xl p-4 mb-3">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs px-2 py-0.5 rounded-full font-medium ${st.color}">${st.label}</span>
+        <span class="text-xs text-gray-500">報告日: ${new Date(r.reportedAt).toLocaleDateString('ja-JP')}${r.resolvedAt ? ' ／ 解決日: ' + new Date(r.resolvedAt).toLocaleDateString('ja-JP') : ''}</span>
+      </div>
+      <div class="text-sm font-medium text-gray-900 mb-1">${r.symptom}</div>
+      <div class="text-xs text-gray-600 space-y-1">
+        ${meta.join('')}
+        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-gray-500">${footer.map(f => `<span>${f}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ==================== 書類カード ====================
