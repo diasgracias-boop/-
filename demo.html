@@ -1681,7 +1681,7 @@ document.getElementById('login-password').addEventListener('keydown', e => { if 
 
 // ==================== ナビゲーション ====================
 function showPage(name) {
-  ['dashboard','devices','inspections','maintenance','repairs','sterilization-check','clean-field'].forEach(p => {
+  ['dashboard','devices','dealers','inspections','maintenance','repairs','sterilization-check','clean-field'].forEach(p => {
     const el = document.getElementById('page-' + p);
     if (el) el.classList.add('hidden');
     const nav = document.getElementById('nav-' + p);
