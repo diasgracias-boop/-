@@ -28,6 +28,11 @@ export async function POST(req: NextRequest) {
       contactPerson: body.contactPerson || null,
       phone: body.phone || null,
       email: body.email || null,
+      address: body.address || null,
+      landline: body.landline || null,
+      mobile: body.mobile || null,
+      fax: body.fax || null,
+      tollFree: body.tollFree || null,
     },
   });
   return NextResponse.json(dealer, { status: 201 });

@@ -235,6 +235,11 @@ model Dealer {
   contactPerson String?
   phone         String?
   email         String?
+  address       String?
+  landline      String?
+  mobile        String?
+  fax           String?
+  tollFree      String?
   repairLogs    RepairLog[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

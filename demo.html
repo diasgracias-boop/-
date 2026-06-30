@@ -511,7 +511,12 @@
     <div id="page-repairs" class="hidden p-6">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">修理・故障履歴</h1>
-        <button onclick="openRepairModal()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700">+ 故障を報告</button>
+        <div class="flex items-center gap-2">
+          <button onclick="exportRepairCsv()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">CSV出力</button>
+          <button onclick="document.getElementById('repair-csv-input').click()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">CSV取込</button>
+          <input id="repair-csv-input" type="file" accept=".csv" class="hidden" onchange="if(this.files[0]) importRepairCsv(this.files[0]); this.value='';">
+          <button onclick="openRepairModal()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700">+ 故障を報告</button>
+        </div>
       </div>
       <div class="flex gap-2 mb-4">
         <button onclick="setRepairFilter('')" data-rfilter="" class="repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">すべて</button>
@@ -519,11 +524,17 @@
         <button onclick="setRepairFilter('IN_PROGRESS')" data-rfilter="IN_PROGRESS" class="repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">対応中</button>
         <button onclick="setRepairFilter('RESOLVED')" data-rfilter="RESOLVED" class="repair-filter-btn px-4 py-1.5 rounded-full text-sm font-medium border border-gray-300 text-gray-600">解決済</button>
       </div>
+      <div class="flex items-center gap-3 mb-4">
+        <select id="repair-dealer-filter" onchange="renderRepairs()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">すべての代理店</option>
+        </select>
+        <span id="repair-import-msg" class="text-sm text-green-700"></span>
+      </div>
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr class="text-left text-xs text-gray-500">
-              <th class="px-4 py-3">機器名</th><th class="px-4 py-3">症状</th><th class="px-4 py-3">ステータス</th>
+              <th class="px-4 py-3">機器名</th><th class="px-4 py-3">代理店</th><th class="px-4 py-3">症状</th><th class="px-4 py-3">ステータス</th>
               <th class="px-4 py-3">報告者</th><th class="px-4 py-3">報告日</th><th class="px-4 py-3">費用</th><th class="px-4 py-3">操作</th>
             </tr>
           </thead>
@@ -1364,8 +1375,10 @@
       </div>
       <div><label class="block text-sm font-medium text-gray-700 mb-1">症状 *</label>
         <textarea id="fr-symptom" rows="3" placeholder="発生した症状を詳しく記入" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></div>
-      <div><label class="block text-sm font-medium text-gray-700 mb-1">修理業者</label>
-        <input id="fr-vendor" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">代理店（修理業者）</label>
+        <select id="fr-dealerId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">代理店を選択...</option>
+        </select></div>
       <div class="flex gap-3 pt-2">
         <button onclick="saveRepair()" class="flex-1 bg-red-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-red-700">故障を報告</button>
         <button onclick="closeModal('modal-repair')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
@@ -1403,8 +1416,10 @@
       <div class="grid grid-cols-2 gap-4">
         <div><label class="block text-sm font-medium text-gray-700 mb-1">修理費用（円）</label>
           <input id="fru-cost" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
-        <div><label class="block text-sm font-medium text-gray-700 mb-1">修理業者</label>
-          <input id="fru-vendor" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">代理店（修理業者）</label>
+          <select id="fru-dealerId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">代理店を選択...</option>
+          </select></div>
       </div>
       <div class="flex gap-3 pt-2">
         <button onclick="saveRepairUpdate()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">更新</button>
@@ -1575,11 +1590,11 @@ let db = {
     { id: 'm3', deviceId: 'd4', performedBy: '担当スタッフ', performedAt: '2026-04-01', type: 'CLEANING', description: '定期清掃・プローブ点検', result: '清掃完了。プローブ異常なし。' },
   ],
   repairLogs: [
-    { id: 'r1', deviceId: 'd3', reportedBy: '看護師 田中', reportedAt: '2026-05-10', symptom: '表示画面が点灯しない、アラーム音が鳴らない', cause: '', action: '', status: 'OPEN', cost: null, vendor: 'フクダ電子サービス',
+    { id: 'r1', deviceId: 'd3', reportedBy: '看護師 田中', reportedAt: '2026-05-10', symptom: '表示画面が点灯しない、アラーム音が鳴らない', cause: '', action: '', status: 'OPEN', cost: null, vendor: 'フクダ電子サービス', dealerId: 'dl2',
       statusLogs: [
         { id: 'rl1', status: 'OPEN', changedBy: '看護師 田中', note: '表示画面が点灯しない、アラーム音が鳴らない', changedAt: '2026-05-10T09:00' },
       ] },
-    { id: 'r2', deviceId: 'd1', reportedBy: '佐藤', reportedAt: '2026-05-20', symptom: '電源が入らない', cause: '電源基板の故障', action: '電源基板を交換', status: 'RESOLVED', resolvedAt: '2026-05-28', cost: 45000, vendor: '日本光電サービス',
+    { id: 'r2', deviceId: 'd1', reportedBy: '佐藤', reportedAt: '2026-05-20', symptom: '電源が入らない', cause: '電源基板の故障', action: '電源基板を交換', status: 'RESOLVED', resolvedAt: '2026-05-28', cost: 45000, vendor: '日本光電サービス', dealerId: 'dl1',
       statusLogs: [
         { id: 'rl2', status: 'OPEN', changedBy: '佐藤', note: '電源が入らないと報告', changedAt: '2026-05-20T09:00' },
         { id: 'rl3', status: 'IN_PROGRESS', changedBy: 'ME1', note: 'メーカーに保守依頼、部品手配', changedAt: '2026-05-22T10:30' },
@@ -1587,8 +1602,8 @@ let db = {
       ] },
   ],
   dealers: [
-    { id: 'dl1', name: 'メディカル商事', contactPerson: '鈴木一郎', phone: '03-1234-5678', email: 'suzuki@medical-shoji.co.jp' },
-    { id: 'dl2', name: '〇〇メディカル', contactPerson: '田中花子', phone: '06-9876-5432', email: 'tanaka@maru-medical.co.jp' },
+    { id: 'dl1', name: '日本光電サービス', contactPerson: '鈴木一郎', phone: '03-1234-5678', email: 'suzuki@nihonkohden.example.jp' },
+    { id: 'dl2', name: 'フクダ電子サービス', contactPerson: '田中花子', phone: '06-9876-5432', email: 'tanaka@fukuda.example.jp' },
   ],
   sterilizationChecks: (function() {
     const today = new Date().toISOString().slice(0,10);
@@ -2920,14 +2935,25 @@ function renderRepairs() {
       (isActive ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50');
   });
 
-  let filtered = currentRepairFilter ? db.repairLogs.filter(r => r.status === currentRepairFilter) : db.repairLogs;
+  const dealerSel = document.getElementById('repair-dealer-filter');
+  if (dealerSel) {
+    const cur = dealerSel.value;
+    dealerSel.innerHTML = '<option value="">すべての代理店</option>' + db.dealers.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    dealerSel.value = cur;
+  }
+  const dealerFilter = dealerSel ? dealerSel.value : '';
+  let filtered = db.repairLogs;
+  if (currentRepairFilter) filtered = filtered.filter(r => r.status === currentRepairFilter);
+  if (dealerFilter) filtered = filtered.filter(r => r.dealerId === dealerFilter);
   document.getElementById('repair-table-body').innerHTML = filtered.length === 0
-    ? '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">修理・故障履歴がありません</td></tr>'
+    ? '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">修理・故障履歴がありません</td></tr>'
     : [...filtered].reverse().map(r => {
         const d = getDevice(r.deviceId);
+        const dl = db.dealers.find(x => x.id === r.dealerId);
         const st = repairStatusConfig[r.status] || { label: r.status, color: 'bg-gray-100 text-gray-600' };
         return `<tr class="hover:bg-gray-50">
           <td class="px-4 py-3 font-medium text-gray-900"><div>${d?.name}</div><div class="text-xs text-gray-400 font-mono">${d?.deviceCode}</div></td>
+          <td class="px-4 py-3 text-gray-600">${dl ? dl.name : '—'}</td>
           <td class="px-4 py-3 text-gray-600 max-w-xs truncate">${r.symptom}</td>
           <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${st.color}">${st.label}</span></td>
           <td class="px-4 py-3 text-gray-600">${r.reportedBy}</td>
@@ -2939,13 +2965,101 @@ function renderRepairs() {
   populateDeviceSelects();
 }
 
+function repairCsvCell(v) {
+  const s = (v == null ? '' : String(v));
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function exportRepairCsv() {
+  const dealerFilter = document.getElementById('repair-dealer-filter')?.value || '';
+  let rows = db.repairLogs;
+  if (currentRepairFilter) rows = rows.filter(r => r.status === currentRepairFilter);
+  if (dealerFilter) rows = rows.filter(r => r.dealerId === dealerFilter);
+  const headers = ['修理ID','機器名','機器コード','症状','現在ステータス','新ステータス','対応者','対応コメント'];
+  const body = rows.map(r => {
+    const d = getDevice(r.deviceId);
+    const st = repairStatusConfig[r.status]?.label || r.status;
+    return [r.id, d?.name || '', d?.deviceCode || '', r.symptom, st, '', '', ''];
+  });
+  const csv = '﻿' + [headers, ...body].map(r => r.map(repairCsvCell).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dlName = dealerFilter ? (db.dealers.find(x => x.id === dealerFilter)?.name || '代理店') : '全代理店';
+  a.href = url;
+  a.download = `修理依頼_${dlName}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function parseRepairCsv(text) {
+  const rows = []; let row = []; let cell = ''; let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else {
+      if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else if (c === '\r') {}
+      else cell += c;
+    }
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim() !== ''));
+}
+
+async function importRepairCsv(file) {
+  const msgEl = document.getElementById('repair-import-msg');
+  msgEl.textContent = '';
+  const STATUS_MAP = { '未対応':'OPEN','対応中':'IN_PROGRESS','解決済':'RESOLVED','完了':'CLOSED', OPEN:'OPEN', IN_PROGRESS:'IN_PROGRESS', RESOLVED:'RESOLVED', CLOSED:'CLOSED' };
+  const text = await file.text();
+  const rows = parseRepairCsv(text);
+  if (rows.length < 2) { msgEl.textContent = 'CSVにデータ行がありません'; return; }
+  const h = rows[0].map(x => x.trim());
+  const idIdx = h.indexOf('修理ID'), stIdx = h.indexOf('新ステータス'), byIdx = h.indexOf('対応者'), noteIdx = h.indexOf('対応コメント');
+  if (idIdx === -1) { msgEl.textContent = '「修理ID」列が見つかりません'; return; }
+  let updated = 0, skipped = 0;
+  rows.slice(1).forEach(r => {
+    const id = r[idIdx]?.trim();
+    const newStatusRaw = stIdx >= 0 ? r[stIdx]?.trim() : '';
+    const note = noteIdx >= 0 ? r[noteIdx]?.trim() : '';
+    const changedBy = (byIdx >= 0 ? r[byIdx]?.trim() : '') || '代理店';
+    const newStatus = newStatusRaw ? STATUS_MAP[newStatusRaw] : null;
+    if (!id || (!newStatus && !note)) { skipped++; return; }
+    const rec = db.repairLogs.find(x => x.id === id);
+    if (!rec) { skipped++; return; }
+    const eff = newStatus || rec.status;
+    rec.status = eff;
+    if (!rec.statusLogs) rec.statusLogs = [];
+    rec.statusLogs.push({ id: uid(), status: eff, changedBy, note: note || '（代理店CSV取込）', changedAt: new Date().toISOString().slice(0,16) });
+    if (eff === 'RESOLVED' || eff === 'CLOSED') {
+      rec.resolvedAt = rec.resolvedAt || new Date().toISOString().slice(0,10);
+      const dev = getDevice(rec.deviceId); if (dev) dev.status = 'ACTIVE';
+    }
+    updated++;
+  });
+  msgEl.textContent = `${updated}件を反映しました${skipped ? `（${skipped}件スキップ）` : ''}`;
+  renderRepairs();
+  renderDevices();
+}
+
+function populateDealerSelect(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">代理店を選択...</option>' + db.dealers.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+}
+
 function openRepairModal(deviceId) {
   populateDeviceSelects();
+  populateDealerSelect('fr-dealerId');
   document.getElementById('fr-deviceId').value = deviceId || '';
   document.getElementById('fr-reportedBy').value = '';
   document.getElementById('fr-reportedAt').value = today();
   document.getElementById('fr-symptom').value = '';
-  document.getElementById('fr-vendor').value = '';
+  document.getElementById('fr-dealerId').value = '';
   document.getElementById('modal-repair').classList.remove('hidden');
 }
 
@@ -2954,9 +3068,10 @@ function saveRepair() {
   const reportedBy = document.getElementById('fr-reportedBy').value;
   const reportedAt = document.getElementById('fr-reportedAt').value;
   const symptom = document.getElementById('fr-symptom').value;
-  const vendor = document.getElementById('fr-vendor').value;
+  const dealerId = document.getElementById('fr-dealerId').value || null;
   if (!deviceId || !reportedBy || !reportedAt || !symptom) { alert('必須項目を入力してください'); return; }
-  db.repairLogs.push({ id: uid(), deviceId, reportedBy, reportedAt, symptom, cause: '', action: '', status: 'OPEN', cost: null, vendor,
+  const dealer = db.dealers.find(x => x.id === dealerId);
+  db.repairLogs.push({ id: uid(), deviceId, reportedBy, reportedAt, symptom, cause: '', action: '', status: 'OPEN', cost: null, vendor: dealer ? dealer.name : '', dealerId,
     statusLogs: [{ id: uid(), status: 'OPEN', changedBy: reportedBy, note: symptom, changedAt: reportedAt + 'T00:00' }] });
   const dev = getDevice(deviceId);
   if (dev) dev.status = 'REPAIR';
@@ -2976,7 +3091,8 @@ function openRepairUpdateModal(id) {
   document.getElementById('fru-note').value = '';
   document.getElementById('fru-action').value = r.action || '';
   document.getElementById('fru-cost').value = r.cost || '';
-  document.getElementById('fru-vendor').value = r.vendor || '';
+  populateDealerSelect('fru-dealerId');
+  document.getElementById('fru-dealerId').value = r.dealerId || '';
   document.getElementById('fru-timeline').innerHTML = renderRepairTimeline(r.statusLogs, r.status);
   document.getElementById('modal-repair-update').classList.remove('hidden');
 }
@@ -2989,7 +3105,8 @@ function saveRepairUpdate() {
   r.status = document.getElementById('fru-status').value;
   r.action = document.getElementById('fru-action').value;
   r.cost = document.getElementById('fru-cost').value ? parseFloat(document.getElementById('fru-cost').value) : null;
-  r.vendor = document.getElementById('fru-vendor').value;
+  r.dealerId = document.getElementById('fru-dealerId').value || null;
+  { const dl = db.dealers.find(x => x.id === r.dealerId); r.vendor = dl ? dl.name : ''; }
   if (!r.statusLogs) r.statusLogs = [];
   r.statusLogs.push({ id: uid(), status: r.status, changedBy, note: document.getElementById('fru-note').value || null, changedAt: new Date().toISOString().slice(0,16) });
   if (r.status === 'RESOLVED' || r.status === 'CLOSED') {
