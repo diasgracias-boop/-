@@ -200,9 +200,13 @@ model RepairLog {
   status     RepairStatus @default(OPEN)
   cost       Float?
   vendor     String?
+  dealerId   String?
+  dealer     Dealer?      @relation(fields: [dealerId], references: [id])
   statusLogs RepairStatusLog[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+
+  @@index([dealerId])
 }
 
 enum RepairStatus {
@@ -231,6 +235,7 @@ model Dealer {
   contactPerson String?
   phone         String?
   email         String?
+  repairLogs    RepairLog[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

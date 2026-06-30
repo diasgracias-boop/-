@@ -8,6 +8,11 @@ interface Device {
   deviceCode: string;
 }
 
+interface Dealer {
+  id: string;
+  name: string;
+}
+
 interface RepairModalProps {
   deviceId?: string;
   onClose: () => void;
@@ -16,13 +21,14 @@ interface RepairModalProps {
 
 export default function RepairModal({ deviceId, onClose, onSaved }: RepairModalProps) {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [dealers, setDealers] = useState<Dealer[]>([]);
   const [form, setForm] = useState({
     deviceId: deviceId ?? "",
     reportedBy: "",
     reportedAt: new Date().toISOString().split("T")[0],
     symptom: "",
     cause: "",
-    vendor: "",
+    dealerId: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -31,6 +37,10 @@ export default function RepairModal({ deviceId, onClose, onSaved }: RepairModalP
       fetch("/api/devices").then((r) => r.json()).then(setDevices);
     }
   }, [deviceId]);
+
+  useEffect(() => {
+    fetch("/api/dealers").then((r) => r.json()).then((d) => setDealers(Array.isArray(d) ? d : []));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -117,13 +127,15 @@ export default function RepairModal({ deviceId, onClose, onSaved }: RepairModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">修理業者</label>
-            <input
-              type="text"
-              value={form.vendor}
-              onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value }))}
+            <label className="block text-sm font-medium text-gray-700 mb-1">代理店（修理業者）</label>
+            <select
+              value={form.dealerId}
+              onChange={(e) => setForm((f) => ({ ...f, dealerId: e.target.value }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">代理店を選択...</option>
+              {dealers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
           </div>
 
           <div className="flex gap-3 pt-2">
