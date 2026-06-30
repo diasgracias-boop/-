@@ -20,7 +20,7 @@ interface Template {
 
 interface Props {
   onClose: () => void;
-  onUpdated: () => void;
+  onUpdated?: () => void;
 }
 
 const emptyItem = (category: Category): TemplateItem => ({ name: "", category, lowerLimit: "", upperLimit: "" });
@@ -86,7 +86,7 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
       });
     }
     await load();
-    onUpdated();
+    onUpdated?.();
     setView("list");
     setSaving(false);
   }
@@ -95,7 +95,7 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
     if (!confirm(`「${name}」を削除しますか？`)) return;
     await fetch(`/api/inspection-templates/${id}`, { method: "DELETE" });
     await load();
-    onUpdated();
+    onUpdated?.();
   }
 
   function addItem(category: Category) {

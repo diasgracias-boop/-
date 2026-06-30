@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import InspectionModal from "@/components/InspectionModal";
 import InspectionCompleteModal from "@/components/InspectionCompleteModal";
 import BulkInspectionModal from "@/components/BulkInspectionModal";
+import InspectionTemplateModal from "@/components/InspectionTemplateModal";
 
 interface InspectionItem {
   id: string;
@@ -41,6 +42,7 @@ export default function InspectionsPage() {
   const [showModal, setShowModal] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<Schedule | null>(null);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const fetchSchedules = useCallback(async () => {
     setLoading(true);
@@ -64,6 +66,12 @@ export default function InspectionsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">点検スケジュール</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowTemplateModal(true)}
+            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            点検項目テンプレート管理
+          </button>
           <button
             onClick={() => setShowBulkModal(true)}
             className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
@@ -175,6 +183,12 @@ export default function InspectionsPage() {
         <InspectionModal
           onClose={() => setShowModal(false)}
           onSaved={fetchSchedules}
+        />
+      )}
+
+      {showTemplateModal && (
+        <InspectionTemplateModal
+          onClose={() => setShowTemplateModal(false)}
         />
       )}
 

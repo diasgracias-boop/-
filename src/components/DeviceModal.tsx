@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
 import DocumentUpload from "./DocumentUpload";
-import InspectionTemplateModal from "./InspectionTemplateModal";
 import RepairModal from "./RepairModal";
 import RepairTimeline, { RepairStatusLogEntry } from "./RepairTimeline";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
@@ -174,7 +173,6 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     pmdaDocUpdatedAt: device?.pmdaDocUpdatedAt ?? "",
   });
   const [templates, setTemplates] = useState<{ id: string; name: string; items: { name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[] }[]>([]);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [inspectionItems, setInspectionItems] = useState<DeviceInspectionItem[]>(
     device?.inspectionItems?.map((i) => ({
       id: i.id,
@@ -368,13 +366,6 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
           </h2>
         </div>
 
-        {showTemplateModal && (
-          <InspectionTemplateModal
-            onClose={() => setShowTemplateModal(false)}
-            onUpdated={loadTemplates}
-          />
-        )}
-
         {pmdaTarget && (
           <PmdaSearchModal
             initialName={form.name}
@@ -543,13 +534,6 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
               <div className="border-t border-gray-200 pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-700">定期点検項目</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowTemplateModal(true)}
-                    className="text-xs text-gray-500 hover:text-blue-600 underline"
-                  >
-                    テンプレートを管理
-                  </button>
                 </div>
                 {/* テンプレート選択 */}
                 <div className="flex gap-2 mb-3">
