@@ -51,20 +51,8 @@ interface DeviceFormData {
   pmdaDocUpdatedAt: string;
 }
 
-const INSPECTION_CATEGORIES = ["外装・機能点検", "性能点検", "電気的安全性点検"] as const;
-type InspectionCategory = typeof INSPECTION_CATEGORIES[number];
-
-interface DeviceInspectionItem {
-  id?: string;
-  name: string;
-  category: InspectionCategory;
-  lowerLimit: string;
-  upperLimit: string;
-}
-
 interface DeviceWithItems extends Partial<DeviceFormData> {
   id: string;
-  inspectionItems?: { id: string; name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[];
 }
 
 interface DeviceModalProps {
@@ -172,16 +160,6 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     pmdaApprovalNumber: device?.pmdaApprovalNumber ?? "",
     pmdaDocUpdatedAt: device?.pmdaDocUpdatedAt ?? "",
   });
-  const [templates, setTemplates] = useState<{ id: string; name: string; items: { name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[] }[]>([]);
-  const [inspectionItems, setInspectionItems] = useState<DeviceInspectionItem[]>(
-    device?.inspectionItems?.map((i) => ({
-      id: i.id,
-      name: i.name,
-      category: (INSPECTION_CATEGORIES.includes(i.category as InspectionCategory) ? i.category : "外装・機能点検") as InspectionCategory,
-      lowerLimit: i.lowerLimit?.toString() ?? "",
-      upperLimit: i.upperLimit?.toString() ?? "",
-    })) ?? []
-  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [pmdaTarget, setPmdaTarget] = useState<DocField | null>(null);
@@ -280,24 +258,6 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     loadSchedules();
   }
 
-  async function loadTemplates() {
-    const res = await fetch("/api/inspection-templates");
-    setTemplates(await res.json());
-  }
-
-  useEffect(() => { loadTemplates(); }, []);
-
-  function applyTemplate(templateId: string) {
-    const t = templates.find((t) => t.id === templateId);
-    if (!t) return;
-    setInspectionItems(t.items.map((i) => ({
-      name: i.name,
-      category: (INSPECTION_CATEGORIES.includes(i.category as InspectionCategory) ? i.category : "外装・機能点検") as InspectionCategory,
-      lowerLimit: i.lowerLimit?.toString() ?? "",
-      upperLimit: i.upperLimit?.toString() ?? "",
-    })));
-  }
-
   function applyPmdaResult(r: PmdaResult) {
     if (!pmdaTarget) return;
     setForm((f) => ({
@@ -329,19 +289,10 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     const url = device ? `/api/devices/${device.id}` : "/api/devices";
     const method = device ? "PUT" : "POST";
 
-    const validItems = inspectionItems
-      .filter((item) => item.name.trim())
-      .map((item) => ({
-        name: item.name.trim(),
-        category: item.category,
-        lowerLimit: item.lowerLimit !== "" ? parseFloat(item.lowerLimit) : null,
-        upperLimit: item.upperLimit !== "" ? parseFloat(item.upperLimit) : null,
-      }));
-
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, inspectionItems: validItems }),
+      body: JSON.stringify(form),
     });
 
     if (!res.ok) {
@@ -528,108 +479,6 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
               <div>
                 <label className={labelCls}>点検備考</label>
                 <textarea value={form.inspectionNotes} onChange={(e) => update("inspectionNotes", e.target.value)} rows={3} className={inputCls} />
-              </div>
-
-              {/* 点検項目テンプレート */}
-              <div className="border-t border-gray-200 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700">定期点検項目</h3>
-                </div>
-                {/* テンプレート選択 */}
-                <div className="flex gap-2 mb-3">
-                  <select
-                    defaultValue=""
-                    onChange={(e) => { if (e.target.value) applyTemplate(e.target.value); e.target.value = ""; }}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
-                  >
-                    <option value="">テンプレートから入力...</option>
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}（{t.items.length}項目）</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mb-2">
-                  <span className="text-xs text-gray-500">カテゴリごとに項目を個別に編集できます</span>
-                </div>
-                <div className="space-y-3">
-                  {INSPECTION_CATEGORIES.map((cat) => {
-                    const catItems = inspectionItems
-                      .map((item, originalIndex) => ({ item, originalIndex }))
-                      .filter(({ item }) => item.category === cat);
-                    return (
-                      <div key={cat} className="border border-gray-200 rounded-xl overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-                          <span className="text-xs font-semibold text-gray-600">{cat}</span>
-                          <button
-                            type="button"
-                            onClick={() => setInspectionItems((prev) => [...prev, { name: "", category: cat, lowerLimit: "", upperLimit: "" }])}
-                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            + 追加
-                          </button>
-                        </div>
-                        {catItems.length > 0 ? (
-                          <table className="w-full text-sm border-collapse">
-                            <thead>
-                              <tr className="text-xs text-gray-500 font-medium border-b border-gray-100">
-                                <th className="text-left px-3 py-1.5">点検項目</th>
-                                <th className="text-center px-2 py-1.5 w-20">下限</th>
-                                <th className="text-center px-2 py-1.5 w-20">上限</th>
-                                <th className="w-6"></th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                              {catItems.map(({ item, originalIndex }) => (
-                                <tr key={originalIndex}>
-                                  <td className="px-3 py-1">
-                                    <input
-                                      type="text"
-                                      value={item.name}
-                                      onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === originalIndex ? { ...it, name: e.target.value } : it))}
-                                      placeholder="項目名"
-                                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    />
-                                  </td>
-                                  <td className="px-2 py-1">
-                                    <input
-                                      type="number"
-                                      value={item.lowerLimit}
-                                      onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === originalIndex ? { ...it, lowerLimit: e.target.value } : it))}
-                                      placeholder="—"
-                                      step="any"
-                                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    />
-                                  </td>
-                                  <td className="px-2 py-1">
-                                    <input
-                                      type="number"
-                                      value={item.upperLimit}
-                                      onChange={(e) => setInspectionItems((prev) => prev.map((it, i) => i === originalIndex ? { ...it, upperLimit: e.target.value } : it))}
-                                      placeholder="—"
-                                      step="any"
-                                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    />
-                                  </td>
-                                  <td className="px-1 py-1 text-center">
-                                    <button
-                                      type="button"
-                                      onClick={() => setInspectionItems((prev) => prev.filter((_, i) => i !== originalIndex))}
-                                      className="text-gray-400 hover:text-red-500 text-lg leading-none"
-                                    >
-                                      ×
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <p className="px-3 py-2 text-xs text-gray-400">項目なし</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
 
               <div className="border-t border-gray-200 pt-4">

@@ -48,19 +48,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const pmdaDocUpdatedAt = body.pmdaDocUpdatedAt || null;
 
   // Upsert inspection items
-  const incomingItems: { id?: string; name: string; category?: string; lowerLimit?: number | null; upperLimit?: number | null; sortOrder?: number }[] = body.inspectionItems ?? [];
-  await prisma.deviceInspectionItem.deleteMany({ where: { deviceId: id } });
-  if (incomingItems.length > 0) {
-    await prisma.deviceInspectionItem.createMany({
-      data: incomingItems.map((item, idx) => ({
-        deviceId: id,
-        name: item.name,
-        category: item.category ?? "外装・機能点検",
-        lowerLimit: item.lowerLimit ?? null,
-        upperLimit: item.upperLimit ?? null,
-        sortOrder: idx,
-      })),
-    });
+  // 点検項目は点検スケジュール/テンプレート側で管理する。
+  // body に inspectionItems が含まれる場合のみ更新し、未指定なら既存項目を保持する。
+  if (body.inspectionItems !== undefined) {
+    const incomingItems: { id?: string; name: string; category?: string; lowerLimit?: number | null; upperLimit?: number | null; sortOrder?: number }[] = body.inspectionItems ?? [];
+    await prisma.deviceInspectionItem.deleteMany({ where: { deviceId: id } });
+    if (incomingItems.length > 0) {
+      await prisma.deviceInspectionItem.createMany({
+        data: incomingItems.map((item, idx) => ({
+          deviceId: id,
+          name: item.name,
+          category: item.category ?? "外装・機能点検",
+          lowerLimit: item.lowerLimit ?? null,
+          upperLimit: item.upperLimit ?? null,
+          sortOrder: idx,
+        })),
+      });
+    }
   }
 
   const device = await prisma.device.update({
