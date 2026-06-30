@@ -325,6 +325,10 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 7v14m18-14v14M3 7l9-4 9 4M9 21v-4a1 1 0 011-1h4a1 1 0 011 1v4M9 11h.01M15 11h.01" /></svg>
         代理店登録
       </button>
+      <button onclick="showPage('staff')" id="nav-staff" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-3.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-3-6.65" /></svg>
+        スタッフ登録
+      </button>
       <button onclick="showPage('inspections')" id="nav-inspections" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
         点検スケジュール
@@ -457,6 +461,28 @@
             </tr>
           </thead>
           <tbody id="dealer-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- スタッフ登録 -->
+    <div id="page-staff" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">スタッフ登録</h1>
+        <button onclick="openStaffModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">+ スタッフを登録</button>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 mb-4 p-4">
+        <input id="staff-search" type="text" placeholder="氏名・部署・役職・電話・メールで検索..." oninput="renderStaff()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr class="text-left text-xs text-gray-500">
+              <th class="px-4 py-3">氏名</th><th class="px-4 py-3">部署</th><th class="px-4 py-3">役職</th>
+              <th class="px-4 py-3">電話番号</th><th class="px-4 py-3">メールアドレス</th><th class="px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody id="staff-table-body"></tbody>
         </table>
       </div>
     </div>
@@ -1301,6 +1327,34 @@
   </div>
 </div>
 
+<!-- スタッフ登録モーダル -->
+<div id="modal-staff" class="hidden modal-overlay">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4">
+    <div class="p-6 border-b border-gray-200"><h2 id="staff-modal-title" class="text-lg font-semibold text-gray-900">スタッフを登録</h2></div>
+    <div class="p-6 space-y-4">
+      <input type="hidden" id="fs-id">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">氏名 *</label>
+        <input id="fs-name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">部署</label>
+          <input id="fs-department" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">役職</label>
+          <input id="fs-position" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+          <input id="fs-phone" type="tel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+          <input id="fs-email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveStaff()" class="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">保存</button>
+        <button onclick="closeModal('modal-staff')" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-200">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 故障報告モーダル -->
 <div id="modal-repair" class="hidden modal-overlay">
   <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4">
@@ -1548,6 +1602,10 @@ let db = {
     { id: 'dl1', name: '日本光電サービス', contactPerson: '鈴木一郎', phone: '03-1234-5678', email: 'suzuki@nihonkohden.example.jp' },
     { id: 'dl2', name: 'フクダ電子サービス', contactPerson: '田中花子', phone: '06-9876-5432', email: 'tanaka@fukuda.example.jp' },
   ],
+  staff: [
+    { id: 'st1', name: '佐藤太郎', department: 'ME室', position: '臨床工学技士', phone: '03-1111-2222', email: 'sato@hospital.example.jp' },
+    { id: 'st2', name: '田中花子', department: '看護部', position: '看護師', phone: '03-3333-4444', email: 'tanaka@hospital.example.jp' },
+  ],
   sterilizationChecks: (function() {
     const today = new Date().toISOString().slice(0,10);
     const yday = new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -1624,7 +1682,7 @@ document.getElementById('login-password').addEventListener('keydown', e => { if 
 
 // ==================== ナビゲーション ====================
 function showPage(name) {
-  ['dashboard','devices','dealers','inspections','maintenance','repairs','sterilization-check','clean-field'].forEach(p => {
+  ['dashboard','devices','dealers','staff','inspections','maintenance','repairs','sterilization-check','clean-field'].forEach(p => {
     const el = document.getElementById('page-' + p);
     if (el) el.classList.add('hidden');
     const nav = document.getElementById('nav-' + p);
@@ -1637,6 +1695,7 @@ function showPage(name) {
   if (name === 'dashboard')    { renderDashboard(); autoCheckPmda(); }
   if (name === 'devices')      renderDevices();
   if (name === 'dealers')      renderDealers();
+  if (name === 'staff')        renderStaff();
   if (name === 'inspections')  renderInspections();
   if (name === 'maintenance')  renderMaintenance();
   if (name === 'repairs')      renderRepairs();
@@ -1884,6 +1943,68 @@ function deleteDealer(id) {
   if (!confirm('この代理店を削除しますか？')) return;
   db.dealers = db.dealers.filter(x => x.id !== id);
   renderDealers();
+}
+
+// ==================== スタッフ登録 ====================
+function renderStaff() {
+  const search = (document.getElementById('staff-search')?.value || '').toLowerCase();
+  const filtered = db.staff.filter(s => !search ||
+    s.name.toLowerCase().includes(search) ||
+    (s.department || '').toLowerCase().includes(search) ||
+    (s.position || '').toLowerCase().includes(search) ||
+    (s.phone || '').toLowerCase().includes(search) ||
+    (s.email || '').toLowerCase().includes(search));
+  document.getElementById('staff-table-body').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">スタッフが登録されていません</td></tr>'
+    : filtered.map(s => `<tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-medium text-gray-900">${s.name}</td>
+        <td class="px-4 py-3 text-gray-600">${s.department || '—'}</td>
+        <td class="px-4 py-3 text-gray-600">${s.position || '—'}</td>
+        <td class="px-4 py-3 text-gray-600">${s.phone || '—'}</td>
+        <td class="px-4 py-3 text-gray-600">${s.email ? `<a href="mailto:${s.email}" class="text-blue-600 hover:underline">${s.email}</a>` : '—'}</td>
+        <td class="px-4 py-3"><div class="flex gap-2">
+          <button onclick="openStaffModal('${s.id}')" class="text-xs text-blue-600 hover:underline">編集</button>
+          <button onclick="deleteStaff('${s.id}')" class="text-xs text-red-500 hover:underline">削除</button>
+        </div></td>
+      </tr>`).join('');
+}
+
+function openStaffModal(id) {
+  const s = id ? db.staff.find(x => x.id === id) : null;
+  document.getElementById('staff-modal-title').textContent = s ? 'スタッフを編集' : 'スタッフを登録';
+  document.getElementById('fs-id').value = s ? s.id : '';
+  document.getElementById('fs-name').value = s ? s.name : '';
+  document.getElementById('fs-department').value = s ? (s.department || '') : '';
+  document.getElementById('fs-position').value = s ? (s.position || '') : '';
+  document.getElementById('fs-phone').value = s ? (s.phone || '') : '';
+  document.getElementById('fs-email').value = s ? (s.email || '') : '';
+  document.getElementById('modal-staff').classList.remove('hidden');
+}
+
+function saveStaff() {
+  const id = document.getElementById('fs-id').value;
+  const name = document.getElementById('fs-name').value.trim();
+  if (!name) { alert('氏名は必須です'); return; }
+  const data = {
+    name,
+    department: document.getElementById('fs-department').value.trim() || null,
+    position: document.getElementById('fs-position').value.trim() || null,
+    phone: document.getElementById('fs-phone').value.trim() || null,
+    email: document.getElementById('fs-email').value.trim() || null,
+  };
+  if (id) {
+    Object.assign(db.staff.find(x => x.id === id), data);
+  } else {
+    db.staff.push({ id: uid(), ...data });
+  }
+  closeModal('modal-staff');
+  renderStaff();
+}
+
+function deleteStaff(id) {
+  if (!confirm('このスタッフを削除しますか？')) return;
+  db.staff = db.staff.filter(x => x.id !== id);
+  renderStaff();
 }
 
 // ==================== 修理タイムライン ====================

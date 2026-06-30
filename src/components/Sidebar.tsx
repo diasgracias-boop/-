@@ -33,6 +33,15 @@ const navItems = [
     ),
   },
   {
+    href: "/dashboard/staff",
+    label: "スタッフ登録",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-3.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-3-6.65" />
+      </svg>
+    ),
+  },
+  {
     href: "/dashboard/inspections",
     label: "点検スケジュール",
     icon: (
