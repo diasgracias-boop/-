@@ -2531,8 +2531,9 @@ function renderInspRecordsTab() {
   const list = document.getElementById('insp-records-list');
   if (!list) return;
   const deviceSchedules = db.inspections.filter(i => i.deviceId === editingDeviceId);
+  const addBtn = `<div class="flex justify-end mb-3"><button type="button" onclick="openInspectionModal(editingDeviceId)" class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700">+ 点検予定を追加</button></div>`;
   if (!editingDeviceId || deviceSchedules.length === 0) {
-    list.innerHTML = '<p class="text-sm text-gray-500">点検スケジュールがありません。「点検スケジュール」ページから追加してください。</p>';
+    list.innerHTML = addBtn + '<p class="text-sm text-gray-500">点検スケジュールがありません。上の「点検予定を追加」から登録してください。</p>';
     return;
   }
   const pending = deviceSchedules.filter(s => !s.completed);
@@ -2614,7 +2615,7 @@ function renderInspRecordsTab() {
         }).join('')}
     </div>`;
 
-  list.innerHTML = pendingSection + completedHtml;
+  list.innerHTML = addBtn + pendingSection + completedHtml;
 }
 
 function renderInspItemsTable(s) {
@@ -2834,12 +2835,18 @@ function saveInspectionComplete() {
   renderInspections();
 }
 
-function openInspectionModal() {
+let inspectionModalFromDevice = false;
+
+function openInspectionModal(presetDeviceId) {
   populateDeviceSelects();
-  document.getElementById('fi-deviceId').value = '';
+  const sel = document.getElementById('fi-deviceId');
+  const wrap = sel.closest('div');
+  inspectionModalFromDevice = !!presetDeviceId;
+  sel.value = presetDeviceId || '';
+  if (wrap) wrap.style.display = presetDeviceId ? 'none' : '';
   document.getElementById('fi-scheduledAt').value = '';
   document.getElementById('fi-description').value = '';
-  renderInspectionItemPreview('');
+  renderInspectionItemPreview(presetDeviceId || '');
   document.getElementById('modal-inspection').classList.remove('hidden');
 }
 
@@ -2888,6 +2895,7 @@ function saveInspection() {
   db.inspections.push({ id: uid(), deviceId, scheduledAt, intervalDays, description, completed: false, items });
   closeModal('modal-inspection');
   renderInspections();
+  if (inspectionModalFromDevice) renderInspRecordsTab();
 }
 
 // ==================== 保守履歴 ====================

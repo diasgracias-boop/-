@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
 import DocumentUpload from "./DocumentUpload";
 import RepairModal from "./RepairModal";
+import InspectionModal from "./InspectionModal";
 import RepairTimeline, { RepairStatusLogEntry } from "./RepairTimeline";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
 
@@ -173,6 +174,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   const [inspMeasurements, setInspMeasurements] = useState<InspectionMeasurement[]>([]);
   const [inspSaving, setInspSaving] = useState(false);
   const [inspLoadingItems, setInspLoadingItems] = useState(false);
+  const [showAddSchedule, setShowAddSchedule] = useState(false);
 
   // 修理履歴タブ用 state
   const [repairs, setRepairs] = useState<RepairLogForModal[]>([]);
@@ -522,10 +524,21 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
             <div className="p-6 space-y-4">
               {!device?.id ? (
                 <p className="text-sm text-gray-500">機器を保存してから点検を登録してください。</p>
-              ) : schedulesLoading ? (
+              ) : (
+              <>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSchedule(true)}
+                  className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  + 点検予定を追加
+                </button>
+              </div>
+              {schedulesLoading ? (
                 <p className="text-sm text-gray-400">読み込み中...</p>
               ) : schedules.length === 0 ? (
-                <p className="text-sm text-gray-500">点検スケジュールがありません。「点検スケジュール」ページから追加してください。</p>
+                <p className="text-sm text-gray-500">点検スケジュールがありません。上の「点検予定を追加」から登録してください。</p>
               ) : (
                 <div className="space-y-3">
                   {schedules.filter((s) => !s.completed).map((s) => {
@@ -727,6 +740,15 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                     </div>
                   )}
                 </div>
+              )}
+              {showAddSchedule && device?.id && (
+                <InspectionModal
+                  deviceId={device.id}
+                  onClose={() => setShowAddSchedule(false)}
+                  onSaved={loadSchedules}
+                />
+              )}
+              </>
               )}
             </div>
           )}
