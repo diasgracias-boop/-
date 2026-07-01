@@ -2535,19 +2535,17 @@ function renderInspRecordsTab() {
     list.innerHTML = '<p class="text-sm text-gray-500">点検スケジュールがありません。「点検スケジュール」ページから追加してください。</p>';
     return;
   }
-  list.innerHTML = deviceSchedules.map(s => {
+  const pending = deviceSchedules.filter(s => !s.completed);
+  const completed = deviceSchedules.filter(s => s.completed);
+  const pendingHtml = pending.map(s => {
     const days = Math.ceil((new Date(s.scheduledAt) - Date.now()) / 86400000);
     const isOverdue = days < 0;
-    const badge = s.completed
-      ? '<span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">完了済</span>'
-      : isOverdue
-        ? '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">期限超過</span>'
-        : '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">予定</span>';
-    const sub = s.completed
-      ? `予定日: ${new Date(s.scheduledAt).toLocaleDateString('ja-JP')}${s.completedAt ? ' ／ 実施日: ' + new Date(s.completedAt).toLocaleDateString('ja-JP') : ''}${s.completedBy ? ' ／ 点検者: ' + s.completedBy : ''}`
-      : `予定日: ${new Date(s.scheduledAt).toLocaleDateString('ja-JP')} ／ ${isOverdue ? Math.abs(days) + '日超過' : 'あと' + days + '日'}`;
-    const clickHandler = s.completed ? '' : `onclick="toggleInspRecord('${s.id}')"`;
-    const borderClass = s.completed ? 'border-gray-200 opacity-60' : isOverdue ? 'border-red-300' : 'border-gray-200';
+    const badge = isOverdue
+      ? '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">期限超過</span>'
+      : '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">予定</span>';
+    const sub = `予定日: ${new Date(s.scheduledAt).toLocaleDateString('ja-JP')} ／ ${isOverdue ? Math.abs(days) + '日超過' : 'あと' + days + '日'}`;
+    const clickHandler = `onclick="toggleInspRecord('${s.id}')"`;
+    const borderClass = isOverdue ? 'border-red-300' : 'border-gray-200';
     return `
     <div class="border ${borderClass} rounded-xl overflow-hidden mb-3">
       <div class="flex items-center justify-between px-4 py-3 ${s.completed ? 'bg-gray-50' : 'hover:bg-gray-50 cursor-pointer'}" ${clickHandler}>
@@ -2589,6 +2587,34 @@ function renderInspRecordsTab() {
       </div>
     </div>`;
   }).join('');
+
+  const pendingSection = pending.length === 0
+    ? '<p class="text-sm text-gray-500">予定されている点検はありません。</p>'
+    : pendingHtml;
+
+  const completedHtml = completed.length === 0 ? '' : `
+    <div class="pt-4 mt-2 border-t border-gray-200 space-y-2">
+      <h3 class="text-sm font-semibold text-gray-700">過去の点検一覧</h3>
+      ${completed
+        .slice()
+        .sort((a, b) => new Date(b.completedAt || b.scheduledAt) - new Date(a.completedAt || a.scheduledAt))
+        .map(s => {
+          const ng = (s.items || []).filter(it => it.judgment === 'NG').length;
+          return `
+      <div class="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+        <div class="flex items-center gap-3">
+          <span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">完了済</span>
+          <div>
+            <div class="text-sm font-medium text-gray-900">${s.description}</div>
+            <div class="text-xs text-gray-500">実施日: ${new Date(s.completedAt || s.scheduledAt).toLocaleDateString('ja-JP')}${s.completedBy ? ' ／ 点検者: ' + s.completedBy : ''} ／ 予定日: ${new Date(s.scheduledAt).toLocaleDateString('ja-JP')}</div>
+          </div>
+        </div>
+        ${ng > 0 ? `<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">NG ${ng}件</span>` : ''}
+      </div>`;
+        }).join('')}
+    </div>`;
+
+  list.innerHTML = pendingSection + completedHtml;
 }
 
 function renderInspItemsTable(s) {

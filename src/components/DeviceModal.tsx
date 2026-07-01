@@ -528,7 +528,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                 <p className="text-sm text-gray-500">点検スケジュールがありません。「点検スケジュール」ページから追加してください。</p>
               ) : (
                 <div className="space-y-3">
-                  {schedules.map((s) => {
+                  {schedules.filter((s) => !s.completed).map((s) => {
                     const isActive = activeScheduleId === s.id;
                     const days = Math.ceil((new Date(s.scheduledAt).getTime() - Date.now()) / 86400000);
                     const isOverdue = days < 0;
@@ -692,6 +692,40 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                       </div>
                     );
                   })}
+                  {schedules.filter((s) => !s.completed).length === 0 && (
+                    <p className="text-sm text-gray-500">予定されている点検はありません。</p>
+                  )}
+
+                  {/* 過去の点検一覧 */}
+                  {schedules.some((s) => s.completed) && (
+                    <div className="pt-4 mt-2 border-t border-gray-200 space-y-2">
+                      <h3 className="text-sm font-semibold text-gray-700">過去の点検一覧</h3>
+                      {schedules
+                        .filter((s) => s.completed)
+                        .sort((a, b) => new Date(b.completedAt ?? b.scheduledAt).getTime() - new Date(a.completedAt ?? a.scheduledAt).getTime())
+                        .map((s) => {
+                          const ng = s.items.filter((it) => it.judgment === "NG").length;
+                          return (
+                            <div key={s.id} className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">完了済</span>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{s.description}</div>
+                                  <div className="text-xs text-gray-500">
+                                    実施日: {new Date(s.completedAt ?? s.scheduledAt).toLocaleDateString("ja-JP")}
+                                    {s.completedBy && ` ／ 点検者: ${s.completedBy}`}
+                                    {` ／ 予定日: ${new Date(s.scheduledAt).toLocaleDateString("ja-JP")}`}
+                                  </div>
+                                </div>
+                              </div>
+                              {ng > 0 && (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">NG {ng}件</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
