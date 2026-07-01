@@ -296,6 +296,19 @@
         <textarea id="inspectionNotes" rows="3" placeholder="点検に関する特記事項"></textarea>
       </div>
 
+      <!-- 点検項目・テンプレート（分類連動） -->
+      <div style="border-top:1px solid #e5e7eb;padding-top:16px">
+        <p class="section-title" style="margin-bottom:8px">点検項目</p>
+        <label>テンプレートから入力（機器の分類に連動）</label>
+        <select id="inspTemplate">
+          <option value="">テンプレートを選択...</option>
+          <option value="tpl1">★推奨 電気安全点検（診断機器） — 5項目</option>
+          <option value="tpl2">超音波装置点検（超音波機器） — 4項目</option>
+          <option value="tpl3">年次外観・動作確認 — 3項目</option>
+        </select>
+        <p style="font-size:12px;color:#9ca3af;margin-top:4px">機器の分類に一致するテンプレートを先頭に「★推奨」表示します。選択すると点検項目に読み込まれます。</p>
+      </div>
+
       <div class="section-divider">
         <p class="section-title">バッテリー管理</p>
         <div class="grid-2">
