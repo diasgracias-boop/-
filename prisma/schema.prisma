@@ -89,11 +89,12 @@ model SterilizationCheck {
 }
 
 model InspectionTemplate {
-  id        String                   @id @default(cuid())
-  name      String
-  createdAt DateTime                 @default(now())
-  updatedAt DateTime                 @updatedAt
-  items     InspectionTemplateItem[]
+  id             String                   @id @default(cuid())
+  name           String
+  deviceCategory String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  items          InspectionTemplateItem[]
 }
 
 model InspectionTemplateItem {

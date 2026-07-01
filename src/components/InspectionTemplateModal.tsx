@@ -15,6 +15,7 @@ interface TemplateItem {
 interface Template {
   id: string;
   name: string;
+  deviceCategory: string | null;
   items: { id: string; name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[];
 }
 
@@ -29,6 +30,7 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [editing, setEditing] = useState<Template | null>(null);
   const [editName, setEditName] = useState("");
+  const [editDeviceCategory, setEditDeviceCategory] = useState("");
   const [editItems, setEditItems] = useState<TemplateItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<"list" | "edit">("list");
@@ -43,6 +45,7 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
   function openNew() {
     setEditing(null);
     setEditName("");
+    setEditDeviceCategory("");
     setEditItems([]);
     setView("edit");
   }
@@ -50,6 +53,7 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
   function openEdit(t: Template) {
     setEditing(t);
     setEditName(t.name);
+    setEditDeviceCategory(t.deviceCategory ?? "");
     setEditItems(
       t.items.map((i) => ({
         name: i.name,
@@ -66,6 +70,7 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
     setSaving(true);
     const payload = {
       name: editName.trim(),
+      deviceCategory: editDeviceCategory.trim() || null,
       items: editItems
         .filter((i) => i.name.trim())
         .map((i, idx) => ({
@@ -151,7 +156,12 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
                 {templates.map((t) => (
                   <div key={t.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50">
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900">{t.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900">{t.name}</span>
+                        {t.deviceCategory && (
+                          <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-medium">{t.deviceCategory}</span>
+                        )}
+                      </div>
                       <div className="flex gap-3 mt-0.5">
                         {CATEGORIES.map((cat) => {
                           const count = t.items.filter((i) => i.category === cat).length;
@@ -182,6 +192,17 @@ export default function InspectionTemplateModal({ onClose, onUpdated }: Props) {
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="例: 電気安全点検、年次定期点検"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">機器の分類（カテゴリ）</label>
+              <input
+                type="text"
+                value={editDeviceCategory}
+                onChange={(e) => setEditDeviceCategory(e.target.value)}
+                placeholder="例: 血圧計、輸液ポンプ（対象機器のカテゴリ）"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
   const template = await prisma.inspectionTemplate.create({
     data: {
       name: body.name,
+      deviceCategory: body.deviceCategory || null,
       items: {
         create: (body.items ?? []).map((item: { name: string; category?: string; lowerLimit?: number; upperLimit?: number }, idx: number) => ({
           name: item.name,

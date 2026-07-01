@@ -16,6 +16,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     where: { id },
     data: {
       name: body.name,
+      deviceCategory: body.deviceCategory || null,
       items: {
         create: (body.items ?? []).map((item: { name: string; category?: string; lowerLimit?: number; upperLimit?: number }, idx: number) => ({
           name: item.name,

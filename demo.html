@@ -1115,6 +1115,11 @@
         <input id="tpl-name" type="text" placeholder="例: 電気安全点検、年次定期点検"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">機器の分類（カテゴリ）</label>
+        <input id="tpl-device-category" type="text" placeholder="例: 血圧計、輸液ポンプ（対象機器のカテゴリ）"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
       <!-- カテゴリ別項目セクション -->
       <div id="tpl-cat-外装・機能点検" class="border border-gray-200 rounded-xl overflow-hidden">
         <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
@@ -2275,7 +2280,10 @@ function renderTemplateList() {
       return `
       <div class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50">
         <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium text-gray-900">${t.name}</div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-gray-900">${t.name}</span>
+            ${t.deviceCategory ? `<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-medium">${t.deviceCategory}</span>` : ''}
+          </div>
           <div class="flex gap-2 mt-0.5">${catSummary || '<span class="text-xs text-gray-400">点検項目なし</span>'}</div>
         </div>
         <span class="text-xs text-gray-400 flex-shrink-0">${t.items.length}項目</span>
@@ -2306,6 +2314,7 @@ function openTemplateManagerModal() {
 
 function tplClearEdit() {
   document.getElementById('tpl-name').value = '';
+  document.getElementById('tpl-device-category').value = '';
   TPL_CATEGORIES.forEach(cat => {
     document.getElementById(`tpl-tbody-${cat}`).innerHTML = '';
     document.getElementById(`tpl-table-${cat}`).style.display = 'none';
@@ -2324,6 +2333,7 @@ function tplOpenEdit(id) {
   const t = db.inspectionTemplates.find(t => t.id === id);
   tplClearEdit();
   document.getElementById('tpl-name').value = t.name;
+  document.getElementById('tpl-device-category').value = t.deviceCategory || '';
   t.items.forEach(item => tplAddItemRow(item.category || '外装・機能点検', item));
   tplSetView('edit');
 }
@@ -2358,6 +2368,7 @@ function tplRemoveRow(btn, category) {
 function tplSave() {
   const name = document.getElementById('tpl-name').value.trim();
   if (!name) { alert('テンプレート名を入力してください'); return; }
+  const deviceCategory = document.getElementById('tpl-device-category').value.trim() || null;
   const items = [];
   let sortOrder = 0;
   TPL_CATEGORIES.forEach(cat => {
@@ -2371,9 +2382,9 @@ function tplSave() {
   });
   if (editingTemplateId) {
     const t = db.inspectionTemplates.find(t => t.id === editingTemplateId);
-    t.name = name; t.items = items;
+    t.name = name; t.deviceCategory = deviceCategory; t.items = items;
   } else {
-    db.inspectionTemplates.push({ id: uid(), name, items });
+    db.inspectionTemplates.push({ id: uid(), name, deviceCategory, items });
   }
   renderTemplateList();
   tplSetView('list');
