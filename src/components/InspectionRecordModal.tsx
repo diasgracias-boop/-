@@ -44,6 +44,13 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
         const list: DeviceInspectionItem[] = d.inspectionItems ?? [];
         setItems(list);
         setMeasurements(list.map(() => ({ measuredValue: "", judgment: "" })));
+        // 基本情報の点検周期（ヶ月）を初期値として日数に換算して連動
+        const months = Number(d.inspectionIntervalMonths);
+        if (months > 0) {
+          const MONTH_TO_DAYS: Record<number, number> = { 1: 30, 3: 90, 6: 180, 12: 365, 18: 547, 24: 730 };
+          const days = MONTH_TO_DAYS[months] ?? Math.round(months * 30);
+          setForm((f) => ({ ...f, intervalDays: String(days) }));
+        }
       });
   }, [deviceId]);
 
@@ -114,10 +121,20 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
                 onChange={(e) => setForm((f) => ({ ...f, intervalDays: e.target.value }))}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="30">月次（30日）</option>
-                <option value="90">四半期（90日）</option>
-                <option value="180">半年（180日）</option>
-                <option value="365">年次（365日）</option>
+                {(() => {
+                  const base: { v: string; label: string }[] = [
+                    { v: "30", label: "月次（30日）" },
+                    { v: "90", label: "四半期（90日）" },
+                    { v: "180", label: "半年（180日）" },
+                    { v: "365", label: "年次（365日）" },
+                    { v: "547", label: "1年6ヶ月（547日）" },
+                    { v: "730", label: "2年（730日）" },
+                  ];
+                  if (!base.some((o) => o.v === form.intervalDays)) {
+                    base.push({ v: form.intervalDays, label: `${form.intervalDays}日` });
+                  }
+                  return base.map((o) => <option key={o.v} value={o.v}>{o.label}</option>);
+                })()}
               </select>
             </div>
           </div>

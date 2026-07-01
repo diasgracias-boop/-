@@ -2785,10 +2785,18 @@ function submitInspRecord(scheduleId) {
 function openInspectionRecordModal() {
   if (!editingDeviceId) return;
   document.getElementById('fir-completedAt').value = new Date().toISOString().split('T')[0];
-  document.getElementById('fir-intervalDays').value = '365';
+  const device = db.devices.find(d => d.id === editingDeviceId);
+  // 基本情報の点検周期（ヶ月）を初期値として日数に換算して連動
+  const months = Number(device?.inspectionIntervalMonths);
+  const M2D = { 1: 30, 3: 90, 6: 180, 12: 365, 18: 547, 24: 730 };
+  const sel = document.getElementById('fir-intervalDays');
+  let days = months > 0 ? (M2D[months] || Math.round(months * 30)) : 365;
+  if (![...sel.options].some(o => o.value === String(days))) {
+    sel.add(new Option(days + '日', String(days)));
+  }
+  sel.value = String(days);
   document.getElementById('fir-completedBy').value = '';
   document.getElementById('fir-description').value = '定期点検・動作確認';
-  const device = db.devices.find(d => d.id === editingDeviceId);
   const items = device?.inspectionItems ?? [];
   const container = document.getElementById('fir-items');
   if (items.length === 0) {
