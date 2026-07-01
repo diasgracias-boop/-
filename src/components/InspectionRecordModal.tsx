@@ -10,6 +10,13 @@ interface DeviceInspectionItem {
   upperLimit: number | null;
 }
 
+interface TemplateForPicker {
+  id: string;
+  name: string;
+  deviceCategory: string | null;
+  items: { name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[];
+}
+
 interface InspectionRecordModalProps {
   deviceId: string;
   onClose: () => void;
@@ -36,6 +43,9 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
     description: "定期点検・動作確認",
   });
   const [saving, setSaving] = useState(false);
+  const [deviceCategory, setDeviceCategory] = useState("");
+  const [templates, setTemplates] = useState<TemplateForPicker[]>([]);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
 
   useEffect(() => {
     fetch(`/api/devices/${deviceId}`)
@@ -44,6 +54,7 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
         const list: DeviceInspectionItem[] = d.inspectionItems ?? [];
         setItems(list);
         setMeasurements(list.map(() => ({ measuredValue: "", judgment: "" })));
+        setDeviceCategory(d.category ?? "");
         // 基本情報の点検周期（ヶ月）を初期値として日数に換算して連動
         const months = Number(d.inspectionIntervalMonths);
         if (months > 0) {
@@ -52,7 +63,41 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
           setForm((f) => ({ ...f, intervalDays: String(days) }));
         }
       });
+    fetch("/api/inspection-templates")
+      .then((r) => r.json())
+      .then((data) => setTemplates(Array.isArray(data) ? data : []))
+      .catch(() => setTemplates([]));
   }, [deviceId]);
+
+  const sortedTemplates = [...templates].sort((a, b) => {
+    const am = a.deviceCategory && deviceCategory && a.deviceCategory === deviceCategory ? 0 : 1;
+    const bm = b.deviceCategory && deviceCategory && b.deviceCategory === deviceCategory ? 0 : 1;
+    return am - bm;
+  });
+
+  async function applyTemplateToDevice(templateId: string) {
+    const t = templates.find((x) => x.id === templateId);
+    if (!t) return;
+    const list: DeviceInspectionItem[] = t.items.map((i, idx) => ({
+      id: `tpl-${idx}`,
+      name: i.name,
+      category: i.category,
+      lowerLimit: i.lowerLimit,
+      upperLimit: i.upperLimit,
+    }));
+    setItems(list);
+    setMeasurements(list.map(() => ({ measuredValue: "", judgment: "" })));
+    // 次回以降この機器に定着させるため、機器の点検項目としても保存する
+    setApplyingTemplate(true);
+    await fetch(`/api/devices/${deviceId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        inspectionItems: t.items.map((i, idx) => ({ name: i.name, category: i.category, lowerLimit: i.lowerLimit, upperLimit: i.upperLimit, sortOrder: idx })),
+      }),
+    });
+    setApplyingTemplate(false);
+  }
 
   function updateMeasurement(index: number, field: "measuredValue" | "judgment", value: string) {
     setMeasurements((prev) => prev.map((m, i) => {
@@ -167,9 +212,29 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">点検項目（機器情報より）</label>
             {items.length === 0 ? (
-              <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
-                この機器には点検項目が登録されていません。機器情報フォームで設定してください。
-              </p>
+              <div className="bg-gray-50 rounded-lg px-3 py-3 space-y-2">
+                <p className="text-xs text-gray-500">
+                  この機器には点検項目が登録されていません。テンプレートから読み込むか、機器情報フォームで設定してください。
+                </p>
+                {templates.length > 0 && (
+                  <select
+                    defaultValue=""
+                    disabled={applyingTemplate}
+                    onChange={(e) => { if (e.target.value) applyTemplateToDevice(e.target.value); e.target.value = ""; }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    <option value="">{applyingTemplate ? "読み込み中..." : "テンプレートを選択..."}</option>
+                    {sortedTemplates.map((t) => {
+                      const match = t.deviceCategory && deviceCategory && t.deviceCategory === deviceCategory;
+                      return (
+                        <option key={t.id} value={t.id}>
+                          {match ? "★推奨 " : ""}{t.name}{t.deviceCategory ? `（${t.deviceCategory}）` : ""} — {t.items.length}項目
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+              </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-sm border-collapse">
