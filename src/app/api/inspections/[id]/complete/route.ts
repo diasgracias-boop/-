@@ -34,7 +34,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     include: { items: true },
   });
 
-  const nextDate = new Date(schedule.scheduledAt);
+  // 次回点検予定 = 前回の点検日（実施日）＋ 点検周期
+  const nextDate = new Date(completedAt);
   nextDate.setDate(nextDate.getDate() + schedule.intervalDays);
 
   // Fetch current device template items for next schedule

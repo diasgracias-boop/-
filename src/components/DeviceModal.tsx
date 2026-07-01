@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import PmdaSearchModal from "./PmdaSearchModal";
 import DocumentUpload from "./DocumentUpload";
 import RepairModal from "./RepairModal";
-import InspectionModal from "./InspectionModal";
+import InspectionRecordModal from "./InspectionRecordModal";
 import RepairTimeline, { RepairStatusLogEntry } from "./RepairTimeline";
 import type { PmdaResult } from "@/app/api/pmda/search/route";
 
@@ -530,15 +530,15 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                 <button
                   type="button"
                   onClick={() => setShowAddSchedule(true)}
-                  className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-green-700 transition-colors"
                 >
-                  + 点検予定を追加
+                  + 点検実施を追加
                 </button>
               </div>
               {schedulesLoading ? (
                 <p className="text-sm text-gray-400">読み込み中...</p>
               ) : schedules.length === 0 ? (
-                <p className="text-sm text-gray-500">点検スケジュールがありません。上の「点検予定を追加」から登録してください。</p>
+                <p className="text-sm text-gray-500">点検実施の記録がありません。上の「点検実施を追加」から登録してください。</p>
               ) : (
                 <div className="space-y-3">
                   {schedules.filter((s) => !s.completed).map((s) => {
@@ -742,7 +742,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                 </div>
               )}
               {showAddSchedule && device?.id && (
-                <InspectionModal
+                <InspectionRecordModal
                   deviceId={device.id}
                   onClose={() => setShowAddSchedule(false)}
                   onSaved={loadSchedules}
