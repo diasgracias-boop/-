@@ -276,6 +276,13 @@
         </div>
       </div>
 
+      <div class="grid-2">
+        <div>
+          <label>点検周期（ヶ月）</label>
+          <input type="number" id="inspectionIntervalMonths" min="0" placeholder="例: 12">
+        </div>
+      </div>
+
       <div>
         <label>備考</label>
         <textarea id="notes" rows="3" placeholder="自由記述"></textarea>
@@ -284,13 +291,6 @@
 
     <!-- ========== 点検・バッテリー ========== -->
     <div id="panel-inspection" class="tab-panel space-y">
-      <div class="grid-2">
-        <div>
-          <label>点検間隔（ヶ月）</label>
-          <input type="number" id="inspectionIntervalMonths" min="0" placeholder="例: 12">
-        </div>
-      </div>
-
       <div>
         <label>点検備考</label>
         <textarea id="inspectionNotes" rows="3" placeholder="点検に関する特記事項"></textarea>
