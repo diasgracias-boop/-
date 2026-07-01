@@ -54,6 +54,23 @@ interface DeviceFormData {
 
 interface DeviceWithItems extends Partial<DeviceFormData> {
   id: string;
+  inspectionItems?: { id?: string; name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[];
+}
+
+const INSPECTION_CATEGORIES = ["外装・機能点検", "性能点検", "電気的安全性点検"] as const;
+
+interface DeviceInspItem {
+  name: string;
+  category: string;
+  lowerLimit: string;
+  upperLimit: string;
+}
+
+interface TemplateForPicker {
+  id: string;
+  name: string;
+  deviceCategory: string | null;
+  items: { name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[];
 }
 
 interface DeviceModalProps {
@@ -181,6 +198,51 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   const [repairsLoading, setRepairsLoading] = useState(false);
   const [showRepairModal, setShowRepairModal] = useState(false);
 
+  // 点検項目・テンプレート
+  const [inspectionItems, setInspectionItems] = useState<DeviceInspItem[]>(
+    (device?.inspectionItems ?? []).map((i) => ({
+      name: i.name,
+      category: INSPECTION_CATEGORIES.includes(i.category as typeof INSPECTION_CATEGORIES[number]) ? i.category : "外装・機能点検",
+      lowerLimit: i.lowerLimit != null ? String(i.lowerLimit) : "",
+      upperLimit: i.upperLimit != null ? String(i.upperLimit) : "",
+    }))
+  );
+  const [templates, setTemplates] = useState<TemplateForPicker[]>([]);
+
+  useEffect(() => {
+    fetch("/api/inspection-templates").then((r) => r.json()).then((data) => {
+      setTemplates(Array.isArray(data) ? data : []);
+    }).catch(() => setTemplates([]));
+  }, []);
+
+  function applyTemplate(templateId: string) {
+    const t = templates.find((x) => x.id === templateId);
+    if (!t) return;
+    setInspectionItems(t.items.map((i) => ({
+      name: i.name,
+      category: INSPECTION_CATEGORIES.includes(i.category as typeof INSPECTION_CATEGORIES[number]) ? i.category : "外装・機能点検",
+      lowerLimit: i.lowerLimit != null ? String(i.lowerLimit) : "",
+      upperLimit: i.upperLimit != null ? String(i.upperLimit) : "",
+    })));
+  }
+
+  function addInspItem(category: string) {
+    setInspectionItems((prev) => [...prev, { name: "", category, lowerLimit: "", upperLimit: "" }]);
+  }
+  function updateInspItem(index: number, field: keyof DeviceInspItem, value: string) {
+    setInspectionItems((prev) => prev.map((it, i) => i === index ? { ...it, [field]: value } : it));
+  }
+  function removeInspItem(index: number) {
+    setInspectionItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // 機器の分類に一致するテンプレートを優先（推奨）
+  const sortedTemplates = [...templates].sort((a, b) => {
+    const am = a.deviceCategory && form.category && a.deviceCategory === form.category ? 0 : 1;
+    const bm = b.deviceCategory && form.category && b.deviceCategory === form.category ? 0 : 1;
+    return am - bm;
+  });
+
   const loadRepairs = useCallback(async () => {
     if (!device?.id) return;
     setRepairsLoading(true);
@@ -291,10 +353,20 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     const url = device ? `/api/devices/${device.id}` : "/api/devices";
     const method = device ? "PUT" : "POST";
 
+    const validItems = inspectionItems
+      .filter((it) => it.name.trim())
+      .map((it, idx) => ({
+        name: it.name.trim(),
+        category: it.category,
+        lowerLimit: it.lowerLimit !== "" ? parseFloat(it.lowerLimit) : null,
+        upperLimit: it.upperLimit !== "" ? parseFloat(it.upperLimit) : null,
+        sortOrder: idx,
+      }));
+
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, inspectionItems: validItems }),
     });
 
     if (!res.ok) {
@@ -481,6 +553,73 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
               <div>
                 <label className={labelCls}>点検備考</label>
                 <textarea value={form.inspectionNotes} onChange={(e) => update("inspectionNotes", e.target.value)} rows={3} className={inputCls} />
+              </div>
+
+              {/* 点検項目・テンプレート（分類連動） */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">点検項目</h3>
+                  <span className="text-xs text-gray-400">{inspectionItems.filter((i) => i.name.trim()).length}項目</span>
+                </div>
+                <div className="mb-3">
+                  <label className={labelCls}>テンプレートから入力{form.category ? `（分類「${form.category}」に連動）` : ""}</label>
+                  <select
+                    defaultValue=""
+                    onChange={(e) => { if (e.target.value) applyTemplate(e.target.value); e.target.value = ""; }}
+                    className={inputCls}
+                  >
+                    <option value="">テンプレートを選択...</option>
+                    {sortedTemplates.map((t) => {
+                      const match = t.deviceCategory && form.category && t.deviceCategory === form.category;
+                      return (
+                        <option key={t.id} value={t.id}>
+                          {match ? "★推奨 " : ""}{t.name}{t.deviceCategory ? `（${t.deviceCategory}）` : ""} — {t.items.length}項目
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">機器の分類に一致するテンプレートを先頭に「★推奨」表示します。選択すると点検項目に読み込まれます。</p>
+                </div>
+
+                <div className="space-y-3">
+                  {INSPECTION_CATEGORIES.map((cat) => {
+                    const catItems = inspectionItems
+                      .map((item, originalIndex) => ({ item, originalIndex }))
+                      .filter(({ item }) => item.category === cat);
+                    return (
+                      <div key={cat} className="border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                          <span className="text-xs font-semibold text-gray-600">{cat}</span>
+                          <button type="button" onClick={() => addInspItem(cat)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">+ 追加</button>
+                        </div>
+                        {catItems.length > 0 ? (
+                          <table className="w-full text-sm border-collapse">
+                            <thead>
+                              <tr className="text-xs text-gray-500 font-medium border-b border-gray-100">
+                                <th className="text-left px-3 py-1.5">点検項目</th>
+                                <th className="text-center px-2 py-1.5 w-20">下限</th>
+                                <th className="text-center px-2 py-1.5 w-20">上限</th>
+                                <th className="w-6"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                              {catItems.map(({ item, originalIndex }) => (
+                                <tr key={originalIndex}>
+                                  <td className="px-3 py-1"><input type="text" value={item.name} onChange={(e) => updateInspItem(originalIndex, "name", e.target.value)} placeholder="項目名" className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" /></td>
+                                  <td className="px-2 py-1"><input type="number" value={item.lowerLimit} onChange={(e) => updateInspItem(originalIndex, "lowerLimit", e.target.value)} placeholder="—" step="any" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500" /></td>
+                                  <td className="px-2 py-1"><input type="number" value={item.upperLimit} onChange={(e) => updateInspItem(originalIndex, "upperLimit", e.target.value)} placeholder="—" step="any" className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500" /></td>
+                                  <td className="px-1 py-1 text-center"><button type="button" onClick={() => removeInspItem(originalIndex)} className="text-gray-400 hover:text-red-500 text-lg leading-none">×</button></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <p className="px-3 py-2 text-xs text-gray-400">項目なし</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="border-t border-gray-200 pt-4">
