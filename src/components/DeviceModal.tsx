@@ -288,6 +288,21 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     setInspLoadingItems(false);
   }
 
+  async function applyTemplateToSchedule(scheduleId: string, templateId: string) {
+    if (!templateId) return;
+    setSelectedTemplateId(templateId);
+    setInspLoadingItems(true);
+    const res = await fetch(`/api/inspections/${scheduleId}/apply-template`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ templateId }),
+    });
+    const items = await res.json();
+    setSchedules((prev) => prev.map((s) => s.id === scheduleId ? { ...s, items } : s));
+    setInspMeasurements(items.map((it: { id: string; measuredValue: number | null; judgment: string | null }) => ({ id: it.id, measuredValue: it.measuredValue?.toString() ?? "", judgment: it.judgment ?? "" })));
+    setInspLoadingItems(false);
+  }
+
   function updateInspMeasurement(index: number, field: "measuredValue" | "judgment", value: string) {
     setInspMeasurements((prev) => prev.map((m, i) => {
       if (i !== index) return m;
@@ -751,7 +766,26 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                             {inspLoadingItems ? (
                               <p className="text-xs text-gray-400">点検項目を読み込み中...</p>
                             ) : s.items.length === 0 ? (
-                              <p className="text-xs text-gray-400">点検項目がありません。</p>
+                              <div className="bg-gray-50 rounded-lg px-3 py-3 space-y-2">
+                                <p className="text-xs text-gray-500">点検項目がありません。テンプレートから読み込むか、機器情報フォームで設定してください。</p>
+                                {templates.length > 0 && (
+                                  <select
+                                    value={selectedTemplateId}
+                                    onChange={(e) => applyTemplateToSchedule(s.id, e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="">テンプレートを選択...</option>
+                                    {sortedTemplates.map((t) => {
+                                      const match = t.deviceCategory && form.category && t.deviceCategory === form.category;
+                                      return (
+                                        <option key={t.id} value={t.id}>
+                                          {match ? "★推奨 " : ""}{t.name}{t.deviceCategory ? `（${t.deviceCategory}）` : ""} — {t.items.length}項目
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                )}
+                              </div>
                             ) : (
                               <div className="overflow-x-auto">
                                 <table className="w-full text-sm border-collapse">

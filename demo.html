@@ -2741,11 +2741,36 @@ function renderInspRecordsTab() {
     </div>`;
 
   list.innerHTML = addBtn + pendingSection + completedHtml;
+  // テンプレート選択のデフォルトを前回選択に合わせる
+  list.querySelectorAll('[data-last-tpl]').forEach(div => {
+    const sel = div.querySelector('select');
+    const lastId = div.getAttribute('data-last-tpl');
+    if (sel && lastId) sel.value = lastId;
+  });
 }
 
 function renderInspItemsTable(s) {
   const items = s.items || [];
-  if (items.length === 0) return '<p class="text-xs text-gray-400">点検項目がありません。</p>';
+  if (items.length === 0) {
+    const device = db.devices.find(d => d.id === editingDeviceId);
+    const cat = device?.category || '';
+    const tpls = [...(db.inspectionTemplates || [])].sort((a, b) => {
+      const am = a.deviceCategory && cat && a.deviceCategory === cat ? 0 : 1;
+      const bm = b.deviceCategory && cat && b.deviceCategory === cat ? 0 : 1;
+      return am - bm;
+    });
+    const lastId = device?.lastInspectionTemplateId || '';
+    const options = tpls.map(t => {
+      const match = t.deviceCategory && cat && t.deviceCategory === cat;
+      return `<option value="${t.id}">${match ? '★推奨 ' : ''}${t.name}${t.deviceCategory ? `（${t.deviceCategory}）` : ''} — ${(t.items || []).length}項目</option>`;
+    }).join('');
+    return `<div class="bg-gray-50 rounded-lg px-3 py-3" style="display:flex;flex-direction:column;gap:8px" data-last-tpl="${lastId}">
+      <p class="text-xs text-gray-500">点検項目がありません。テンプレートから読み込むか、機器情報フォームで設定してください。</p>
+      ${tpls.length > 0 ? `<select id="insp-tpl-${s.id}" onchange="applyInspTemplate('${s.id}', this.value)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">テンプレートを選択...</option>${options}
+      </select>` : ''}
+    </div>`;
+  }
   const CATS = ['外装・機能点検', '性能点検', '電気的安全性点検'];
   let lastCat = null;
   let rows = '';
@@ -2823,6 +2848,22 @@ function autoJudgeInspItem(itemId, lower, upper) {
   if (upper !== null && val > upper) j = 'NG';
   sel.value = j;
   applyInspRowStyle(itemId);
+}
+
+function applyInspTemplate(scheduleId, templateId) {
+  if (!templateId) return;
+  const s = db.inspections.find(i => i.id === scheduleId);
+  const t = (db.inspectionTemplates || []).find(x => x.id === templateId);
+  if (!s || !t) return;
+  const newItems = (t.items || []).map(i => ({ id: uid(), name: i.name, category: i.category, lowerLimit: i.lowerLimit ?? null, upperLimit: i.upperLimit ?? null, measuredValue: null, judgment: null }));
+  s.items = newItems;
+  // 機器の点検項目・前回選択テンプレートとしても保存
+  const dev = db.devices.find(d => d.id === editingDeviceId);
+  if (dev) {
+    dev.inspectionItems = (t.items || []).map(i => ({ name: i.name, category: i.category, lowerLimit: i.lowerLimit ?? null, upperLimit: i.upperLimit ?? null }));
+    dev.lastInspectionTemplateId = templateId;
+  }
+  document.getElementById('insp-items-' + scheduleId).innerHTML = renderInspItemsTable(s);
 }
 
 function setAllInspOk(scheduleId) {
