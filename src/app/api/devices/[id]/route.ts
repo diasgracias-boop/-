@@ -110,6 +110,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       pmdaApprovalNumber,
       pmdaDocUpdatedAt,
       ...(pmdaApprovalNumber ? { pmdaLastCheckedAt: new Date(), pmdaUpdateAvailable: false } : {}),
+      ...(body.lastInspectionTemplateId !== undefined ? { lastInspectionTemplateId: body.lastInspectionTemplateId || null } : {}),
     },
   });
 

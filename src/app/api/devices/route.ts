@@ -114,6 +114,7 @@ export async function POST(req: NextRequest) {
       pmdaDocUpdatedAt,
       pmdaLastCheckedAt: pmdaApprovalNumber ? new Date() : null,
       pmdaUpdateAvailable: false,
+      lastInspectionTemplateId: body.lastInspectionTemplateId || null,
       inspectionItems: incomingItems.length > 0 ? {
         create: incomingItems.map((item, idx) => ({
           name: item.name,

@@ -67,6 +67,7 @@ model Device {
   pmdaDocUpdatedAt      String?
   pmdaLastCheckedAt     DateTime?
   pmdaUpdateAvailable   Boolean   @default(false)
+  lastInspectionTemplateId String?
   createdAt             DateTime  @default(now())
   updatedAt        DateTime     @updatedAt
 

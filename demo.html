@@ -2415,6 +2415,7 @@ function tplDelete(id, name) {
 
 const DI_CATEGORIES = ['外装・機能点検', '性能点検', '電気的安全性点検'];
 let deviceFormItems = [];
+let deviceFormLastTemplateId = '';
 
 function renderDeviceFormItems() {
   document.getElementById('di-count').textContent = deviceFormItems.filter(i => (i.name || '').trim()).length + '項目';
@@ -2444,8 +2445,10 @@ function applyDeviceTemplate(tplId) {
   if (!tplId) return;
   const t = (db.inspectionTemplates || []).find(x => x.id === tplId);
   if (!t) return;
+  deviceFormLastTemplateId = tplId;
   deviceFormItems = (t.items || []).map(i => ({ name: i.name, category: DI_CATEGORIES.includes(i.category) ? i.category : '外装・機能点検', lowerLimit: i.lowerLimit ?? null, upperLimit: i.upperLimit ?? null }));
   renderDeviceFormItems();
+  document.getElementById('di-tpl-select').value = tplId;
 }
 function populateDeviceTemplateSelect() {
   const cat = document.getElementById('f-category')?.value || '';
@@ -2460,6 +2463,7 @@ function populateDeviceTemplateSelect() {
       const match = t.deviceCategory && cat && t.deviceCategory === cat;
       return `<option value="${t.id}">${match ? '★推奨 ' : ''}${t.name}${t.deviceCategory ? `（${t.deviceCategory}）` : ''} — ${(t.items || []).length}項目</option>`;
     }).join('');
+  document.getElementById('di-tpl-select').value = deviceFormLastTemplateId || '';
 }
 
 function openDeviceModal(id) {
@@ -2467,6 +2471,7 @@ function openDeviceModal(id) {
   const d = id ? getDevice(id) : null;
   document.getElementById('modal-device-title').textContent = d ? '機器情報を編集' : '新規機器登録';
   deviceFormItems = (d?.inspectionItems ?? []).map(i => ({ name: i.name, category: DI_CATEGORIES.includes(i.category) ? i.category : '外装・機能点検', lowerLimit: i.lowerLimit ?? null, upperLimit: i.upperLimit ?? null }));
+  deviceFormLastTemplateId = d?.lastInspectionTemplateId || '';
 
   // Switch to first tab
   switchDeviceTab('basic', document.querySelector('.device-tab'));
@@ -2555,6 +2560,7 @@ function saveDevice() {
   vals.inspectionItems = deviceFormItems
     .filter(it => (it.name || '').trim())
     .map(it => ({ name: it.name.trim(), category: it.category, lowerLimit: it.lowerLimit ?? null, upperLimit: it.upperLimit ?? null }));
+  vals.lastInspectionTemplateId = deviceFormLastTemplateId || null;
 
   if (editingDeviceId) {
     const idx = db.devices.findIndex(d => d.id === editingDeviceId);
@@ -2889,12 +2895,15 @@ function renderFirItems() {
       const match = t.deviceCategory && cat && t.deviceCategory === cat;
       return `<option value="${t.id}">${match ? '★推奨 ' : ''}${t.name}${t.deviceCategory ? `（${t.deviceCategory}）` : ''} — ${(t.items || []).length}項目</option>`;
     }).join('');
+    const lastId = device?.lastInspectionTemplateId || '';
     container.innerHTML = `<div class="bg-gray-50 rounded-lg px-3 py-3" style="display:flex;flex-direction:column;gap:8px">
       <p class="text-xs text-gray-500">この機器には点検項目が登録されていません。テンプレートから読み込むか、機器情報フォームで設定してください。</p>
-      ${tpls.length > 0 ? `<select onchange="applyFirTemplate(this.value); this.value='';" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+      ${tpls.length > 0 ? `<select id="fir-tpl-select" onchange="applyFirTemplate(this.value)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
         <option value="">テンプレートを選択...</option>${options}
       </select>` : ''}
     </div>`;
+    const sel = document.getElementById('fir-tpl-select');
+    if (sel) sel.value = lastId;
     return;
   }
   const CATS = ['外装・機能点検', '性能点検', '電気的安全性点検'];
@@ -2925,8 +2934,9 @@ function applyFirTemplate(tplId) {
   if (!t) return;
   const idx = db.devices.findIndex(d => d.id === editingDeviceId);
   if (idx === -1) return;
-  // 次回以降この機器に定着させるため、機器の点検項目としても保存する
+  // 次回以降この機器に定着させるため、機器の点検項目・選択テンプレートとしても保存する
   db.devices[idx].inspectionItems = (t.items || []).map(i => ({ name: i.name, category: i.category, lowerLimit: i.lowerLimit ?? null, upperLimit: i.upperLimit ?? null }));
+  db.devices[idx].lastInspectionTemplateId = tplId;
   renderFirItems();
 }
 

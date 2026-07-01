@@ -55,6 +55,7 @@ interface DeviceFormData {
 interface DeviceWithItems extends Partial<DeviceFormData> {
   id: string;
   inspectionItems?: { id?: string; name: string; category: string; lowerLimit: number | null; upperLimit: number | null }[];
+  lastInspectionTemplateId?: string | null;
 }
 
 const INSPECTION_CATEGORIES = ["外装・機能点検", "性能点検", "電気的安全性点検"] as const;
@@ -208,6 +209,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     }))
   );
   const [templates, setTemplates] = useState<TemplateForPicker[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(device?.lastInspectionTemplateId ?? "");
 
   useEffect(() => {
     fetch("/api/inspection-templates").then((r) => r.json()).then((data) => {
@@ -218,6 +220,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
   function applyTemplate(templateId: string) {
     const t = templates.find((x) => x.id === templateId);
     if (!t) return;
+    setSelectedTemplateId(templateId);
     setInspectionItems(t.items.map((i) => ({
       name: i.name,
       category: INSPECTION_CATEGORIES.includes(i.category as typeof INSPECTION_CATEGORIES[number]) ? i.category : "外装・機能点検",
@@ -366,7 +369,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, inspectionItems: validItems }),
+      body: JSON.stringify({ ...form, inspectionItems: validItems, lastInspectionTemplateId: selectedTemplateId || null }),
     });
 
     if (!res.ok) {
@@ -564,8 +567,8 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                 <div className="mb-3">
                   <label className={labelCls}>テンプレートから入力{form.category ? `（分類「${form.category}」に連動）` : ""}</label>
                   <select
-                    defaultValue=""
-                    onChange={(e) => { if (e.target.value) applyTemplate(e.target.value); e.target.value = ""; }}
+                    value={selectedTemplateId}
+                    onChange={(e) => applyTemplate(e.target.value)}
                     className={inputCls}
                   >
                     <option value="">テンプレートを選択...</option>
@@ -578,7 +581,7 @@ export default function DeviceModal({ device, onClose, onSaved }: DeviceModalPro
                       );
                     })}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1">機器の分類に一致するテンプレートを先頭に「★推奨」表示します。選択すると点検項目に読み込まれます。</p>
+                  <p className="text-xs text-gray-400 mt-1">前回選択したテンプレートがデフォルト表示されます。機器の分類に一致するテンプレートは「★推奨」表示。</p>
                 </div>
 
                 <div className="space-y-3">

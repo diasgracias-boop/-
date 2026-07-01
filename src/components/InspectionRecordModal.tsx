@@ -46,6 +46,7 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
   const [deviceCategory, setDeviceCategory] = useState("");
   const [templates, setTemplates] = useState<TemplateForPicker[]>([]);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const [lastTemplateId, setLastTemplateId] = useState("");
 
   useEffect(() => {
     fetch(`/api/devices/${deviceId}`)
@@ -55,6 +56,7 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
         setItems(list);
         setMeasurements(list.map(() => ({ measuredValue: "", judgment: "" })));
         setDeviceCategory(d.category ?? "");
+        setLastTemplateId(d.lastInspectionTemplateId ?? "");
         // 基本情報の点検周期（ヶ月）を初期値として日数に換算して連動
         const months = Number(d.inspectionIntervalMonths);
         if (months > 0) {
@@ -87,6 +89,7 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
     }));
     setItems(list);
     setMeasurements(list.map(() => ({ measuredValue: "", judgment: "" })));
+    setLastTemplateId(templateId);
     // 次回以降この機器に定着させるため、機器の点検項目としても保存する
     setApplyingTemplate(true);
     await fetch(`/api/devices/${deviceId}`, {
@@ -94,6 +97,7 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         inspectionItems: t.items.map((i, idx) => ({ name: i.name, category: i.category, lowerLimit: i.lowerLimit, upperLimit: i.upperLimit, sortOrder: idx })),
+        lastInspectionTemplateId: templateId,
       }),
     });
     setApplyingTemplate(false);
@@ -218,9 +222,9 @@ export default function InspectionRecordModal({ deviceId, onClose, onSaved }: In
                 </p>
                 {templates.length > 0 && (
                   <select
-                    defaultValue=""
+                    value={lastTemplateId}
                     disabled={applyingTemplate}
-                    onChange={(e) => { if (e.target.value) applyTemplateToDevice(e.target.value); e.target.value = ""; }}
+                    onChange={(e) => applyTemplateToDevice(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   >
                     <option value="">{applyingTemplate ? "読み込み中..." : "テンプレートを選択..."}</option>
